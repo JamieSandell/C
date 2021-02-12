@@ -9,7 +9,6 @@ long lines, and if there are no blanks or tabs before the specified column.*/
 #define MAX_INPUT_LENGTH  1000
 #define TAB_SIZE 8
 
-int get_last_non_blank_character_index(char input[], int input_length);
 int get_line(char input[]);
 void fold_input(char input[], int input_length);
 
@@ -27,31 +26,6 @@ int main()
     return 0;
 }
 
-//Returns last non-blank character index that occurs before input_length
-int get_last_non_blank_character_index(char input[], int input_length)
-{
-    int current_column = 0;
-    int last_non_blank_character_index = 0;
-    for (int i = 0; i < input_length && current_column < input_length; ++i)
-    {
-        if (input[i] != ' ' && input[i] != '\t')
-        {
-            last_non_blank_character_index = i;
-            ++current_column;
-        }
-        else if(input[i] == ' ')
-        {
-            ++current_column;
-        }
-        else
-        {
-            current_column += TAB_SIZE;
-        }        
-    }
-
-    return last_non_blank_character_index;
-}
-
 //Returns the character count (excluding the null terminating character)
 int get_line(char input[])
 {
@@ -67,14 +41,6 @@ int get_line(char input[])
     return character_count;
 }
 
-/*
-Need to be passed the full input
-Need to cycle the input
-count the characters and don't let it exceed the max line width
-and store that in a temp array
-then cycle the temp array and make sure it isn't cutting off part of a word
-if it is shorten it
-*/
 void fold_input(char input[], int input_length)
 {
     if (input_length <= MAX_LINE_WIDTH)
@@ -83,52 +49,23 @@ void fold_input(char input[], int input_length)
         return;
     }
 
-    int blank_index = 0;
-    int character_count = 0;
-    int total_character_count = 0;
-    for (int i = 0; i < input_length;)
+    int line_char_count = 0;
+    char prev_char = '-';
+    char curr_char = '-';
+    for (int curr_pos = 0; curr_pos < input_length; ++curr_pos)
     {
-        for (int j = i; character_count <= MAX_LINE_WIDTH && input[j] != '\n'; ++j)
-        {
-            ++total_character_count;
-
-            if (input[j] == ' ')
-            {
-                blank_index = j;
-                character_count++;
-            }
-            else if (input[j] == '\t')
-            {
-                character_count += TAB_SIZE;
-                if (character_count <= MAX_LINE_WIDTH)
-                {
-                    blank_index = j;
-                }
-            }
-            else
-            {
-                character_count++;
-            }
-        }
-
-        if (blank_index > 0)
-        {
-            for (int j = i; j < blank_index; ++j)
-            {
-                putchar(input[j]);
-            }
+        curr_char = input[curr_pos];
+        ++line_char_count;      
+        if (line_char_count <= MAX_LINE_WIDTH)
+        {            
+            putchar(curr_char);
         }
         else
         {
-            for (int j = i; j < character_count; ++j)
-            {
-                putchar(input[j]);
-            }
-        }  
-        putchar('\n');
-        
-        i = total_character_count - blank_index;
-        character_count = 0;
-        blank_index = 0;
-    }    
+            putchar('\n');
+            putchar(curr_char);
+            line_char_count = 0;
+        }
+        prev_char = curr_char;
+    }
 }
