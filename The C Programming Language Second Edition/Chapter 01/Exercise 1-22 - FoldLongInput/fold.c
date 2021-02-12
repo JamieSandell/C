@@ -50,22 +50,41 @@ void fold_input(char input[], int input_length)
     }
 
     int line_char_count = 0;
-    char prev_char = '-';
-    char curr_char = '-';
+    int word_start = 0;
+    int word_end = 0;
+    int last_blank_pos = 0;
+    char prev_char = ' ';
+    char curr_char = ' ';
     for (int curr_pos = 0; curr_pos < input_length; ++curr_pos)
     {
+        ++line_char_count;
+
         curr_char = input[curr_pos];
-        ++line_char_count;      
-        if (line_char_count <= MAX_LINE_WIDTH)
-        {            
-            putchar(curr_char);
+        if (prev_char == ' ' && curr_char != ' ') //start of a word
+        {
+            word_start = curr_pos;
         }
-        else
+        else if (curr_char == ' ' && prev_char != ' ') //end of a word
+        {
+            last_blank_pos = curr_pos;
+            word_end = curr_pos;
+            if (line_char_count <= MAX_LINE_WIDTH) //are we within the character limit for the line?
+            {
+                for (int i = word_start; i < word_end; ++i) //loop through the word and print its characters
+                {
+                    putchar(input[i]);
+                }
+                putchar(curr_char);
+            }
+        }
+        if (line_char_count == MAX_LINE_WIDTH)
         {
             putchar('\n');
-            putchar(curr_char);
+            curr_pos = last_blank_pos;
             line_char_count = 0;
         }
+
         prev_char = curr_char;
     }
+    putchar('\n');
 }
