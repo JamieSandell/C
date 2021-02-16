@@ -16,7 +16,6 @@ int main()
 {
     char input[MAX_INPUT_LENGTH + 1]; //+1 for the null-terminating character
     int line_length = 0;
-    char folded_line[MAX_LINE_WIDTH + 1]; //+1 for the null-terminating character
 
     while ((line_length = get_line(input)) > 0)
     {
@@ -64,13 +63,13 @@ void fold_input(char input[], int input_length)
         {
             word_start = curr_pos;
         }
-        else if (curr_char == ' ' && prev_char != ' ') //end of a word
+        else if ((curr_char == ' ' && prev_char != ' ') || (curr_pos == input_length - 1)) //end of a word or end of input
         {
             last_blank_pos = curr_pos;
             word_end = curr_pos;
-            if (line_char_count <= MAX_LINE_WIDTH) //are we within the character limit for the line?
+            if (line_char_count <= MAX_LINE_WIDTH)
             {
-                for (int i = word_start; i < word_end; ++i) //loop through the word and print its characters
+                for (int i = word_start; i < word_end; ++i)
                 {
                     putchar(input[i]);
                 }
