@@ -50,6 +50,7 @@ void fold_input(char input[], int input_length)
     }
 
     int line_char_count = 0;
+    int word_char_count = 0;
     int word_start = 0;
     int word_end = 0;
     int last_blank_pos = -1;
@@ -58,16 +59,16 @@ void fold_input(char input[], int input_length)
     for (int curr_pos = 0; curr_pos < input_length; ++curr_pos)
     {
         ++line_char_count;
+        ++word_char_count;
 
         curr_char = input[curr_pos];
-        if (line_char_count == 1) //start of a word
+        if (word_char_count == 1)
         {
             word_start = curr_pos;
         }
-        else if ((curr_char == ' ' && prev_char != ' ') || (curr_pos == input_length - 1) || (line_char_count == MAX_LINE_WIDTH)) //end of a word or end of input
+        else if ((curr_char == ' ' && prev_char != ' ') || (curr_pos == input_length - 1) || (line_char_count == MAX_LINE_WIDTH))
         {
-            last_blank_pos = curr_pos;
-            word_end = curr_pos;
+            word_end = curr_pos;            
             if (line_char_count < MAX_LINE_WIDTH)
             {
                 print_word(input, word_start, word_end);
@@ -77,25 +78,8 @@ void fold_input(char input[], int input_length)
             {
                 line_char_count = 0;
             }
+            word_char_count = 0;
         }
-        
-        /* if (line_char_count == MAX_LINE_WIDTH)
-        {
-            if (last_blank_pos == -1)
-            {
-                print_word(input, word_start, word_start + MAX_LINE_WIDTH);
-                putchar('\n');
-                curr_pos = word_start + MAX_LINE_WIDTH - 1;
-                word_start = curr_pos;
-                line_char_count = 0;
-            }
-            else
-            {
-                putchar('\n');
-                curr_pos = last_blank_pos;
-                line_char_count = 0;
-            }            
-        } */
 
         prev_char = curr_char;
     }
