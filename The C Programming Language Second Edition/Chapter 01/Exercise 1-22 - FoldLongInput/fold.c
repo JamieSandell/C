@@ -20,7 +20,7 @@ int main()
 
     while ((line_length = get_line(input)) > 0)
     {
-        fold_input(input, line_length);
+        fold_input(input, line_length - 1); // ignore the terminating character
     }
 
     return 0;
@@ -72,9 +72,17 @@ void fold_input(char input[], int input_length)
         {
             word_char_count++;
         }
+        if(curr_pos == input_length)
+        {
+            word_char_count++;
+            word_end = curr_pos;
+            print_word(input, word_start, word_end);
+            putchar('\n');
+            word_char_count = word_start = word_end = 0;
+        }
         // Have we found the end of a word?
         // Also make sure we are less than the line width, otherwise we'd overflow it
-        if (curr_char == ' ' && prev_char != ' ' && line_char_count < MAX_LINE_WIDTH)
+        else if (curr_char == ' ' && prev_char != ' ' && line_char_count < MAX_LINE_WIDTH)
         {
             ++word_char_count;
             line_word_count++;
@@ -134,11 +142,9 @@ void fold_input(char input[], int input_length)
                 putchar('\n'); // no more characters allowed this line so move down to the next
             }
             line_word_count = line_char_count = 0; // reset for the next line
-        }
-
+        }        
         prev_char = curr_char;
     }
-    //putchar('\n'); // terminate the line
 }
 
 void print_word(char word[], int word_start, int word_end)
