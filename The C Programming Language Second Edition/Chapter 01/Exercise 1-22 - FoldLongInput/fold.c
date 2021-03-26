@@ -13,6 +13,7 @@ typedef int bool;
 #define TRUE  1
 #define FALSE 0
 
+void detab(char source[], int source_length, char destination[], int destination_length, int tab_size);
 int get_line(char input[]);
 int get_number_of_tabs(char input, int input_length);
 void fold_input(char input[], int input_length);
@@ -164,4 +165,37 @@ void print_word(char word[], int word_start, int word_end)
     {
         putchar(word[i]);
     }
+}
+
+//source and destination lengths should include the null terminating character
+void detab(char source[], int source_length, char destination[], int destination_length, int tab_size)
+{
+    //Copy the source to the destination, exchanging tabs with the relevant number of spaces
+    int characters_since_last_tab = 0;
+    int destination_index = 0;
+    for (int i = 0; i < source_length; ++i)
+    {
+        if (source[i] == '\t')
+        {
+            //Tab character found so copy the right amount of spaces to the destination
+            for (int j = 0; j < (tab_size - characters_since_last_tab); ++j)
+            {
+                destination[destination_index] = ' ';
+                ++destination_index;
+            }
+            characters_since_last_tab = 0; //Reset the counter            
+        }
+        else
+        {
+            /*As long as the counter doesn't exceed the tab size we can easily work out how many
+            spaces to swap a tab for when we hit a tab character*/        
+            if (characters_since_last_tab <= tab_size)
+            {
+                ++characters_since_last_tab;
+            }
+            destination[destination_index] = source[i];
+            ++destination_index;
+        }        
+    }
+    destination[destination_length - 1] = '\0'; //null terminate the destination
 }
