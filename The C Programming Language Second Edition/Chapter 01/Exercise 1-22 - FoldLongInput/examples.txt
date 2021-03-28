@@ -5,3 +5,7 @@ This is a second example of a test for fold input, which folds input over multip
 This is     a third test   that has multiple spaces in a row. How excitng. :-D
 
 aaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccddddddddddddddddddddddddeeeeeeee
+
+this is a big test, really going for it now, here we go, woohoo! What? Still going! Amazing! Keep it up!
+
+this is a big test, really going    for it now, here we go, woohoo! What?   Still going! Amazing! Keep it up!

@@ -25,9 +25,15 @@ int main()
     char input[MAX_INPUT_LENGTH + 1]; //+1 for the null-terminating character
     int line_length = 0;
 
+    int detabbed_input_length;
+
     while ((line_length = get_line(input)) > 0)
     {
-        fold_input(input, line_length - 1); // ignore the terminating character
+        detabbed_input_length = calculate_destination_length(input, line_length, TAB_SIZE);
+        char detabbed_input[detabbed_input_length];
+        detab(input, line_length, detabbed_input, detabbed_input_length, TAB_SIZE);
+        fold_input(detabbed_input, detabbed_input_length - 1); // ignore the terminating character
+        //fold_input(input, line_length - 1); 
     }
 
     return 0;
@@ -99,10 +105,6 @@ void fold_input(char input[], int input_length)
         printf("%s\n", input); //input doesn't need folding
         return;
     }
-
-    int destination_length = calculate_destination_length(input, input_length, TAB_SIZE);
-    char destination[destination_length];
-    detab(input, input_length, destination, destination_length, TAB_SIZE);
 
     int line_char_count = 0;
     int line_word_count = 0;
