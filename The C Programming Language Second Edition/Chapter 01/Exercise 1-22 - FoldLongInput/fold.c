@@ -13,9 +13,10 @@ typedef int bool;
 #define TRUE  1
 #define FALSE 0
 
+int calculate_destination_length(char line[], int line_length, int tab_size);
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_size);
 int get_line(char input[]);
-int get_number_of_tabs(char input, int input_length);
+int get_number_of_tabs(char input[], int input_length);
 void fold_input(char input[], int input_length);
 void print_word(char word[], int word_start, int word_end);
 
@@ -30,6 +31,37 @@ int main()
     }
 
     return 0;
+}
+
+/*Work out the destination array size for detabbing (replacing tabs with spaces)
+    Includes space for the null terminating character in its calculation*/
+int calculate_destination_length(char line[], int line_length, int tab_size)
+{
+    int characters_since_last_tab = 0;
+    int destination_size = 0;
+    for (int i = 0; i < line_length; ++i)
+    {
+        if (line[i] == '\t')
+        {
+            /*increase the destination_size by the right amount of spaces by
+            calculating the correct "width" from the last character to the current tab*/
+            destination_size = destination_size + tab_size - characters_since_last_tab;
+            characters_since_last_tab = 0; //Reset the counter       
+        }
+        else
+        {
+            /*As long as the counter doesn't exceed the tab size we can easily work out how many
+            spaces to swap a tab for when we hit a tab character*/        
+            if (characters_since_last_tab <= tab_size)
+            {
+                ++characters_since_last_tab;
+            }
+            ++destination_size; //not a tab so increase by 1 (i.e. we just processed a character from the line[] input)
+        }        
+    }
+
+    ++destination_size; //allow space for the null terminating character
+    return destination_size;
 }
 
 //Returns the character count (including the null terminating character)
@@ -67,6 +99,10 @@ void fold_input(char input[], int input_length)
         printf("%s\n", input); //input doesn't need folding
         return;
     }
+
+    int destination_length = calculate_destination_length(input, input_length, TAB_SIZE);
+    char destination[destination_length];
+    detab(input, input_length, destination, destination_length, TAB_SIZE);
 
     int line_char_count = 0;
     int line_word_count = 0;
@@ -167,6 +203,7 @@ void print_word(char word[], int word_start, int word_end)
     }
 }
 
+//TODO: Change detab to return an integer, 0 for success, any other number indicates how big the destination_length needed to be
 //source and destination lengths should include the null terminating character
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_size)
 {
