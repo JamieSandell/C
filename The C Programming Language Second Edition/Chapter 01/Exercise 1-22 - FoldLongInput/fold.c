@@ -24,16 +24,15 @@ int main()
 {
     char input[MAX_INPUT_LENGTH + 1]; //+1 for the null-terminating character
     int line_length = 0;
-
     int detabbed_input_length;
 
     while ((line_length = get_line(input)) > 0)
     {
+        // swap any tabs for the right amount of spaces and then fold the input
         detabbed_input_length = calculate_destination_length(input, line_length, TAB_SIZE);
         char detabbed_input[detabbed_input_length];
         detab(input, line_length, detabbed_input, detabbed_input_length, TAB_SIZE);
         fold_input(detabbed_input, detabbed_input_length - 1); // ignore the terminating character
-        //fold_input(input, line_length - 1); 
     }
 
     return 0;
@@ -115,7 +114,6 @@ void fold_input(char input[], int input_length)
     bool reset_word_start_end = FALSE;
     for (int curr_pos = 0; curr_pos <= input_length; ++curr_pos)
     {
-        // TODO work with tabs
         if (word_start == -1) // Found the start of a word. Potentially starts with whitespace, but that's ok
         {
             word_start = curr_pos;
@@ -146,7 +144,7 @@ void fold_input(char input[], int input_length)
             // peek at the next character if there's more input available
             if (curr_pos < input_length)
             {
-                if (input[curr_pos+1] == ' ') // end of the word
+                if (input[curr_pos + 1] == ' ') // end of the word
                 {
                     word_end = curr_pos;
                     print_word(input, word_start, word_end);
@@ -205,8 +203,7 @@ void print_word(char word[], int word_start, int word_end)
     }
 }
 
-//TODO: Change detab to return an integer, 0 for success, any other number indicates how big the destination_length needed to be
-//source and destination lengths should include the null terminating character
+// Make sure the destination array is big enough before calling
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_size)
 {
     //Copy the source to the destination, exchanging tabs with the relevant number of spaces
