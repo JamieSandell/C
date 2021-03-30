@@ -16,12 +16,14 @@ int strip_comments(char input[], int input_length, char output[], int output_len
 
 int main()
 {
-    char input[MAX_INPUT + 1]; // +1 for the null termination
+    char input[MAX_INPUT + 1]; /* +1 for the null termination */
     int input_length = get_input(input, MAX_INPUT + 1);
+    char output[input_length];
+    int output_length = strip_comments(input, input_length, output, input_length); /* At this point the length of output is input_length */
     return 0;
 }
 
-/* Reads input until EoF or output_length reached and stores it in output.
+/* Reads input until EoF or output_length reached, and stores it in output.
 Output is terminated as a null terminated string.
 Returns the size (null termination position) of output. */
 int get_input(char output[], int output_length)
@@ -50,9 +52,27 @@ Returns the size (null termination position) of output. */
 int strip_comments(char input[], int input_length, char output[], int output_length)
 {
     int output_pos = 0;
+    char prev_char = ' ';
+    char curr_char;
+    bool in_comment = FALSE;
     for (int i = 0; i < input_length - 1; i++)
     {
-
+        curr_char = input[i];
+        if (in_comment == FALSE)
+        {
+            if ((prev_char == '/') && (curr_char == '*'))
+            {
+                in_comment = TRUE;
+            }
+        }
+        else
+        {
+            if ((prev_char == '*') && (curr_char == '/'))
+            {
+                in_comment = FALSE;
+            }
+        }
+        prev_char = curr_char;
     }
     return output_pos;
 }
