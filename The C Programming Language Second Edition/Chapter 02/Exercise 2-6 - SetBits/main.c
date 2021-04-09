@@ -12,7 +12,7 @@ unsigned setbits(unsigned x, int p, int n, unsigned y);
 
 int main()
 {
-    printf("%u\n",setbits(44, 3, 4, 22));
+    printf("%u\n",setbits(44, 4, 3, 22));
     return 0;
 }
 
@@ -65,28 +65,27 @@ n = 3
 y = 22
 
 binary representations of x and y
+                         11010011
+                         11101001
 0000000 0000000 00000000 00101100 (44) x
 0000000 0000000 00000000 00010110 (22) y
 0000000 0000000 00000000 00010100 are the bits to insert from y in to x, if p = 4 and n = 3
 0000000 0000000 00000000 00110100 should be the result (52) */
 unsigned setbits(unsigned x, int p, int n, unsigned y)
 {
-    unsigned rightmost_n_bits_of_y = getbits(y, n-1, n); /* 00000000 0000000 00000000 00000101*/
-    printf("Rightmost %i bits of %u are: %u\n", n, y, rightmost_n_bits_of_y);
-    unsigned isolated_bits_of_y = rightmost_n_bits_of_y << (p + 1 - n); /* 0000000 0000000 00000000 00010100 (as in the bits to insert in to x at this position */
-
-    unsigned n_bits_of_x_at_p = getbits(x, p, n); /* 00000000 0000000 00000000 00001011 */
-    printf("%i bits of %u at %i are: %u\n", n, x, p, n_bits_of_x_at_p);
-
-    unsigned bitwise_complement_of_isolated_bits_of_y = ~isolated_bits_of_y; /* 11111111 1111111 1111111 11101011*/
-    unsigned bitmask = x & bitwise_complement_of_isolated_bits_of_y; /*    00000000 00000000 00000000 00101100 &
-                                                                           11111111 11111111 11111111 11101011 == 
-                                                                           00000000 00000000 00000000 00101000*/
-    
-
-    return bitmask | isolated_bits_of_y;
-    /* 00000000 00000000 00000000 00101000 |
-       00000000 00000000 00000000 00010100 ==
-       00000000 00000000 00000000 00111100*/
-       /* 00000000 00000000 00000000 00101110 */
+    /* Where relevant the comments assume:
+    x = 44
+    p = 4
+    n = 3
+    y = 22 */
+    /* Get the right most bits of y */
+    unsigned right_most_bits_of_y = getbits(y, p, n);
+    /* Shift these bits in to the position they are to be inserted at x */
+    unsigned isolated_bits_of_y = right_most_bits_of_y << (p + 1 - n);
+    /* OR this with x whose bits starting at position p are masked to zero */
+    return (x & ~(~(~0 << n) << (p + 1 - n))) | isolated_bits_of_y;
+    /* Lhs of OR broken down: 
+    (~0 << n) == (~0 << 3) == (~00000000 << 3) == (11111111 << 3) == (11111000)
+    (~(11111000)) == (00000111)
+     */
 }
