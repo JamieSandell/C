@@ -1,9 +1,6 @@
 /* Write a function setbits(x,p,n,y) that returns x with the n
 bits that begin at position p set to the rightmost n bits of y, leaving the other
-bits unchanged. 
-
-https://www.rapidtables.com/convert/number/decimal-to-binary.html
-https://stackoverflow.com/questions/2076084/kr-exercise-confusion-with-bit-operations */
+bits unchanged. */
 
 #include <stdio.h>
 
@@ -65,12 +62,10 @@ n = 3
 y = 22
 
 binary representations of x and y
-                         11010011
-                         11101001
 0000000 0000000 00000000 00101100 (44) x
 0000000 0000000 00000000 00010110 (22) y
-0000000 0000000 00000000 00010100 are the bits to insert from y in to x, if p = 4 and n = 3
-0000000 0000000 00000000 00110100 should be the result (52) */
+0000000 0000000 00000000 00000110 are the bits to insert from y in to x, if p = 4 and n = 3
+0000000 0000000 00000000 00111000 should be the result (56) */
 unsigned setbits(unsigned x, int p, int n, unsigned y)
 {
     /* Where relevant the comments assume:
@@ -78,14 +73,22 @@ unsigned setbits(unsigned x, int p, int n, unsigned y)
     p = 4
     n = 3
     y = 22 */
-    /* Get the right most bits of y */
-    unsigned right_most_bits_of_y = getbits(y, p, n);
-    /* Shift these bits in to the position they are to be inserted at x */
-    unsigned isolated_bits_of_y = right_most_bits_of_y << (p + 1 - n);
-    /* OR this with x whose bits starting at position p are masked to zero */
-    return (x & ~(~(~0 << n) << (p + 1 - n))) | isolated_bits_of_y;
-    /* Lhs of OR broken down: 
-    (~0 << n) == (~0 << 3) == (~00000000 << 3) == (11111111 << 3) == (11111000)
-    (~(11111000)) == (00000111)
-     */
+
+    unsigned shifting_distance = p + 1 - n; /* Used to shift bits in to position, in this case << 2 */
+    unsigned bitmask = (1 << n) - 1; /* 00000111  as we want to get the last 3 (n) bits of 00010110 (==22 == y)*/
+    unsigned digits_of_y = (y & bitmask) << shifting_distance; /* 00010110 &
+                                                                  00000111 << 2 ==
+                                                                  00000110 << 2 == 
+                                                                  00011000, so this puts the 3 digits from y into position (p = 4)*/
+    unsigned bitmask_shifted_to_the_left = bitmask << shifting_distance; /* 00000111 << 2 == 00011100 */
+    unsigned inverted_bitmask_shifted_to_the_left = ~bitmask_shifted_to_the_left; /* ~00011100 == 11100011 */
+    /* Erase the middle bits of x */
+    x = x & inverted_bitmask_shifted_to_the_left; /* 00101100 &
+                                                     11100011 ==
+                                                     00100000 */
+    /* Add those bits from y into x */
+    x = x | digits_of_y; /* 00100000 |
+                            00011000 ==
+                            00111000 == 56 in decimal*/
+    return x;    
 }
