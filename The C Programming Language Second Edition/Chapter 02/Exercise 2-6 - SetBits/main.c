@@ -72,14 +72,24 @@ unsigned setbits(unsigned x, int p, int n, unsigned y)
     x = 44
     p = 4
     n = 3
-    y = 22 */
+    y = 22
+    
+    What we want is to get the last 3 (n) bits of y, which is 00000110, then shift it in to position (p + 1 - n), so it becomes:
+    00111000, so --111--- is what we need to insert in to x, but we need to leave the left of 111 (--) and the right of 111 (---) the same.
+    To do that we create a bitmask, so those 3 (n) bits of y at the right hand side are turned on (1s) and everything else turned off (0s),
+    which would be 00000111, then we shift our bitmask in to place (p + 1 - n, or << 2), so it becomes
+    00011100, and then we invert it so it's 11100011, then we AND it with x and store it in x, so x is now:
+    00100000.
+    Then we add the bits of y we shifted in to position earlier (---110--) with x, we do this by ORing x and those y numbers.
+    The result being 00100000 | 00011000 == 00111000 (56 decimal)
+     */
 
     unsigned shifting_distance = p + 1 - n; /* Used to shift bits in to position, in this case << 2 */
     unsigned bitmask = (1 << n) - 1; /* 00000111  as we want to get the last 3 (n) bits of 00010110 (==22 == y)*/
-    unsigned digits_of_y = (y & bitmask) << shifting_distance; /* 00010110 &
-                                                                  00000111 << 2 ==
-                                                                  00000110 << 2 == 
-                                                                  00011000, so this puts the 3 digits from y into position (p = 4)*/
+    unsigned digits_of_y = getbits(y, n - 1, n) << shifting_distance; /* 00010110 &
+                                                                         00000111 << 2 ==
+                                                                         00000110 << 2 == 
+                                                                         00011000, so this puts the 3 digits from y into position (p = 4)*/
     unsigned bitmask_shifted_to_the_left = bitmask << shifting_distance; /* 00000111 << 2 == 00011100 */
     unsigned inverted_bitmask_shifted_to_the_left = ~bitmask_shifted_to_the_left; /* ~00011100 == 11100011 */
     /* Erase the middle bits of x */
