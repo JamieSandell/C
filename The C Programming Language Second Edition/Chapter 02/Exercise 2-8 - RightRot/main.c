@@ -6,10 +6,12 @@
 
 unsigned getbits(unsigned x, int p, int n); /* From the previous exercise */
 unsigned rightrot(unsigned x, int n);
-unsigned setbits(unsigned x, int p, int n, unsigned y); /* From Exercise 2-6 */
 
 int main()
 {
+    unsigned x = 127;
+    int n = 3;
+    printf("%u rotated to the right by %i bit positions = %u\n", x, n, rightrot(x, n));
     return 0;
 }
 
@@ -52,7 +54,7 @@ unsigned getbits(unsigned x, int p, int n)
     return (x >> (p + 1 - n)) & ~(~0 << n);
 }
 
-/* Doesn't stop you going over the width of an integer, so no clamping of n within the function
+/* Doesn't stop you going over the width of an integer, so no clamping of n within the function.
 Right circular shift (moving the first bit to the last position while shifting all other bits to the previous position.
 E.g. x = 127, n = 3, code assumes ints are 32 bits.
 00000000 00000000 00000000 01111111 becomes
@@ -60,60 +62,12 @@ E.g. x = 127, n = 3, code assumes ints are 32 bits.
 unsigned rightrot(unsigned x, int n)
 {
     /* grab the n bits of x */
-    unsigned n_bits_of_x = getbits(x, n - 1, n); /* 00000000 0000000 0000000 01111111 */
-    unsigned x_shifted_right = x >> n; /* 00000000 00000000 00000000 00001111 */
+    unsigned n_bits_of_x = getbits(x, n - 1, n);   /* 00000000 00000000 00000000 00000111 */
+    unsigned x_shifted_right = x >> n;             /* 00000000 00000000 00000000 00001111 */
     unsigned shift_left = SIZE_OF_INT - 1 - n;
-    unsigned x_shifted_left = x << shift_left; /* 111 */
+    unsigned bit_mask = n_bits_of_x << shift_left; /* 11100000 00000000 00000000 00000000 */
+    return bit_mask | x_shifted_right;             /* 11100000 00000000 00000000 00000000 |
+                                                      00000000 00000000 00000000 00000111 ==
+                                                      11100000 00000000 00000000 00000111 == decimal 3758096391 */
 
-}
-
-/* Write a function setbits(x,p,n,y) that returns x with the n
-bits that begin at position p set to the rightmost n bits of y, leaving the other
-bits unchanged.
-assume:
-x = 44
-p = 4
-n = 3
-y = 22
-
-binary representations of x and y
-0000000 0000000 00000000 00101100 (44) x
-0000000 0000000 00000000 00010110 (22) y
-0000000 0000000 00000000 00000110 are the bits to insert from y in to x, if p = 4 and n = 3
-0000000 0000000 00000000 00111000 should be the result (56) */
-unsigned setbits(unsigned x, int p, int n, unsigned y)
-{
-    /* Where relevant the comments assume:
-    x = 44
-    p = 4
-    n = 3
-    y = 22
-    
-    What we want is to get the last 3 (n) bits of y, which is 00000110, then shift it in to position (p + 1 - n), so it becomes:
-    00111000, so --111--- is what we need to insert in to x, but we need to leave the left of 111 (--) and the right of 111 (---) the same.
-    To do that we create a bitmask, so those 3 (n) bits of y at the right hand side are turned on (1s) and everything else turned off (0s),
-    which would be 00000111, then we shift our bitmask in to place (p + 1 - n, or << 2), so it becomes
-    00011100, and then we invert it so it's 11100011, then we AND it with x and store it in x, so x is now:
-    00100000.
-    Then we add the bits of y we shifted in to position earlier (---110--) with x, we do this by ORing x and those y numbers.
-    The result being 00100000 | 00011000 == 00111000 (56 decimal)
-     */
-
-    unsigned shifting_distance = p + 1 - n; /* Used to shift bits in to position, in this case << 2 */
-    unsigned bitmask = (1 << n) - 1; /* 00000111  as we want to get the last 3 (n) bits of 00010110 (==22 == y)*/
-    unsigned digits_of_y = getbits(y, n - 1, n) << shifting_distance; /* 00010110 &
-                                                                         00000111 << 2 ==
-                                                                         00000110 << 2 == 
-                                                                         00011000, so this puts the 3 digits from y into position (p = 4)*/
-    unsigned bitmask_shifted_to_the_left = bitmask << shifting_distance; /* 00000111 << 2 == 00011100 */
-    unsigned inverted_bitmask_shifted_to_the_left = ~bitmask_shifted_to_the_left; /* ~00011100 == 11100011 */
-    /* Erase the middle bits of x */
-    x = x & inverted_bitmask_shifted_to_the_left; /* 00101100 &
-                                                     11100011 ==
-                                                     00100000 */
-    /* Add those bits from y into x */
-    x = x | digits_of_y; /* 00100000 |
-                            00011000 ==
-                            00111000 == 56 in decimal*/
-    return x;    
 }
