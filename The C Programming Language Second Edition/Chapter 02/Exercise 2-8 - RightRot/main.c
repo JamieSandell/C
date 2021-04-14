@@ -68,6 +68,5 @@ unsigned rightrot(unsigned x, int n)
     unsigned bit_mask = n_bits_of_x << shift_left; /* 11100000 00000000 00000000 00000000 */
     return bit_mask | x_shifted_right;             /* 11100000 00000000 00000000 00000000 |
                                                       00000000 00000000 00000000 00000111 ==
-                                                      11100000 00000000 00000000 00000111 == decimal 3758096391 */
-
+                                                      11100000 00000000 00000000 00001111 == decimal 1879048207 */
 }
