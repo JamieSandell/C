@@ -24,12 +24,38 @@ Then one (000...00001) is added (ignoring overflow). This avoids the two represe
 000...0010 = +2
 000...0001 = +1
 111...1111 = -1
-111...1110 = -2*/
+111...1110 = -2
+
+so if x = 5 = 000...0101 (call this A) and in twos complement =
+              111...1011 
+so
+000...0101 - 1 =
+000...0101 - 000...0001
+twos complement of 000...0001 = 111...1111 (call this -B)
+A + (-B)
+000...0101 (5) + 
+111...1111 (-1) =
+000...0100 (4)
+
+000...0101 = 000...0101 & (000...0101 - 1)
+000...0101 = 000...0101 &
+             000...0100 =
+             000...0100 (4)
+
+then on the next iteration of bitcount
+000...0100 = 000...0100 &
+             000...0011 =
+             000...0000
+which would break the loop and our b++ counter would = 2, which is right, there are two bits in the binary representation of 5.
+
+
+
+              */
 int bitcount(unsigned x)
 {
     int b;
 
-    for (b = 0; x != 0; x &= (x -1 ))
+    for (b = 0; x != 0; x &= (x - 1))
     {
         b++;
     }
