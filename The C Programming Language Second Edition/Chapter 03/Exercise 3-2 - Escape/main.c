@@ -17,6 +17,11 @@ int main()
     escape(destination, source);
     printf("%s\n", destination);
 
+    putchar('\n');
+    printf("%s\n", destination);
+    escape_reverse(source, destination);
+    printf("%s\n", source);
+
     return 0;
 }
 
@@ -26,7 +31,7 @@ void escape(char s[], char t[])
 {
     int i;
     int j;
-    for (i = 0, j = 0; t[i] != '\0'; i++, j++)
+    for (i = 0, j = 0; t[i] != '\0'; ++i, ++j)
     {
         switch (t[i])
         {
@@ -45,7 +50,35 @@ void escape(char s[], char t[])
     }
     s[j] = '\0';
 }
+
+/* Expects null terminated strings to be passed in.
+Haven't done the full escape character set for brevity, but the principal is the same for each one. */
 void escape_reverse(char s[], char t[])
 {
-
+    int i;
+    int j;
+    for (i = 0, j = 0; t[i] != '\0'; ++i, ++j)
+    {
+        switch (t[i])
+        {
+            case '\\':
+                switch (t[++i])
+                {
+                    case 'n':
+                        s[j] = '\n';
+                        break;
+                    case 't':
+                        s[j] = '\t';
+                        break;
+                    default:
+                        s[j] = t[--i];
+                        break;
+                }
+                break;
+            default:
+                s[j] = t[i];
+                break;
+        }
+    }
+    s[j] = '\0';
 }
