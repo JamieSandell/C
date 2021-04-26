@@ -13,7 +13,7 @@ const int lower_alph_range_end = 122; /* z */
 const int upper_alph_range_start = 65; /* A */
 const int upper_alph_range_end = 90; /* Z */
 
-const int MAX_SIZE = 50;
+const int MAX_SIZE = 1000;
 
 void expand(char s1[], char s2[]);
 unsigned int is_digit(char c);
@@ -22,7 +22,7 @@ unsigned int is_upper_alphabet(char c);
 
 int main()
 {
-    char to_expand[] = {"a-z"};
+    char to_expand[] = {"-a-z-0-9-A-Z-Z-G-"};
     char expanded[MAX_SIZE];
 
     printf("To expand: %s\n", to_expand);
