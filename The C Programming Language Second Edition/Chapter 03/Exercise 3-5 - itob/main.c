@@ -5,12 +5,18 @@ itob(n,s,16) formats n as a hexadecimal integer in s. */
 #include <stdio.h>
 #include <string.h>
 
+const int MAX_LEN = 32;
+const int
+
+void itob(int n, char s[], b);
 void reverse(char s[]);
 
 int main()
 {
     return 0;
 }
+
+void 
 
 /* Reverse s in place */
 void reverse(char s[])
