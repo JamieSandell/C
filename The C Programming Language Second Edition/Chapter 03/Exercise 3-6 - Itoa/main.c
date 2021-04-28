@@ -5,12 +5,14 @@ be padded with blanks on the left if necessary to make it wide enough. */
 #include <stdio.h>
 #include <string.h>
 
+#define MAX_SIZE 1000
+
 void itoa(int n, char s[], unsigned minimum_field_width);
 void reverse(char s[]);
 
 int main()
 {
-    char s[1000];
+    char s[MAX_SIZE];
     int number = -128;
     itoa(number, s, 8);
     printf("Converted %i to a string: %s\n", number, s);
@@ -37,11 +39,20 @@ void itoa(int n, char s[], unsigned minimum_field_width)
     reverse(s);
 
     /* Insert blanks */
-    int number_of_blanks_to_insert = digit_count - minimum_field_width;
+    int number_of_blanks_to_insert = minimum_field_width - digit_count;
     if (number_of_blanks_to_insert > 0)
     {
         int s_length = strlen(s) - 1;
-        /* shift all characters over to the right by number_of_blanks_to_insert */
+        char temp[MAX_SIZE];
+        int i;
+        for (i = 0; i < number_of_blanks_to_insert; ++i)
+        {
+            temp[i] = ' ';
+        }
+        temp[i] = '\0';
+
+        strcat(temp, s); /* Append our number string to the end of the blanks */
+        strcpy(s, temp); /* Copy the correctly formatted temp over our number string */
     }
 }
 
