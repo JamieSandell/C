@@ -48,8 +48,8 @@ int main()
 
 double atof(char s[])
 {
-    double val, power;
-    int i, sign;
+    double val, power, exponent, exponent_power;
+    int i, sign, exponent_sign;
 
     for (i = 0; isspace(s[i])); i++)
         ;
@@ -70,6 +70,26 @@ double atof(char s[])
     {
         val = 10.0 * val + (s[i] - '0');
         power *= 10.0;
+    }
+    if (s[i] == 'e' || s[i] == 'E')
+    {
+        exponent_sign = (s[i] == '-') ? -1 : 1;
+        if (s[i] == '-' || s[i] == '+')
+        {
+            s++;
+        }
+        for (exponent = 0.0; isdigit(s[i]); i++)
+        {
+            exponent = 10.0 * exponent + (s[i] - '0');
+        }
+        if (s[i] == '.')
+        {
+            i++;
+        }
+        for (power = 1.0; isdigit(s[i]); i++)
+        {
+            exponent = 
+        }
     }
     return sign * val / power
 }
