@@ -40,77 +40,69 @@ double atof(char s[])
 #include <string.h>
 
 double atof(char s[]);
-double power(double x, double y);
+double power(double x, int y);
 
 int main()
 {
-    char number[] = {"10e2"};
+    char number[] = {"10e-2"};
     printf("%s converted to double: %f\n", number, atof(number));
 }
 
 double atof(char s[])
 {
-    double val, val_power, exponent, exponent_power;
-    int i, sign, exponent_sign;
+    double val, val_power;
+    int i, sign, exponent, exponent_sign;
 
-    for (i = 0; isspace(s[i]); i++)
+    for (i = 0; isspace(s[i]); i++) /* ignore white space */
         ;
-    sign = (s[i] == '-') ? -1 : 1;
+    sign = (s[i] == '-') ? -1 : 1; /* store the sign */
     if (s[i] == '+' || s[i] == '-')
     {
         i++;
     }
-    for (val = 0.0; isdigit(s[i]); i++)
+    for (val = 0.0; isdigit(s[i]); i++) /* convert to the nth column */
     {
         val = 10.0 * val + (s[i] - '0');
     }
-    if (s[i] == '.')
+    if (s[i] == '.') /* deal with the decimal */
     {
         i++;
     }
-    for (val_power = 1.0; isdigit(s[i]); i++)
+    for (val_power = 1.0; isdigit(s[i]); i++) /* convert to the nth column */
     {
         val = 10.0 * val + (s[i] - '0');
         val_power *= 10.0;
     }
-    if (s[i] == 'e' || s[i] == 'E')
+    if (s[i] == 'e' || s[i] == 'E') /* check for an exponent symbol */
     {
-        exponent_sign = (s[++i] == '-') ? -1 : 1;
+        exponent_sign = (s[++i] == '-') ? -1 : 1; /* store the exponent sign */
         if (s[i] == '-' || s[i] == '+')
         {
             s++;
         }
-        for (exponent = 0.0; isdigit(s[i]); i++)
+        for (exponent = 0.0; isdigit(s[i]); i++) /* convert to the nth column */
         {
             exponent = 10.0 * exponent + (s[i] - '0');
         }
-        if (s[i] == '.')
-        {
-            i++;
-        }
-        for (exponent_power = 1.0; isdigit(s[i]); i++)
-        {
-            exponent = 10.0 * exponent + (s[i] - '0');
-            exponent_power *= 10.0;
-        }
-        return power(sign * val / val_power, exponent_sign * exponent / exponent_power);
+        return power(sign * val / val_power, exponent_sign * exponent);
     }
-    return sign * val / val_power;
+    return sign * val / val_power; /* convert the number and add the sign */
 }
 
-double power(double x, double y)
+/* x raised to the power of y.
+Handles positive and negative whole numbered exponents */
+double power(double x, int y)
 {
-    double result = x;
+    double result = 1.00;
     int i;
-
-    if (y)
+    if (y<0)
     {
-        for (i = 0; i < y - 1; i++)
-        {
-            result *= x;
-        }
-        return result;
-    }    
-
+        y=-1*y;
+        x=1/x;
+    }
+    for (i=1;i<=y;i++)
+    {
+        result *= x;
+    }
     return result;
 }
