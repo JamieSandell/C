@@ -41,19 +41,28 @@ int main()
         switch (type)
         {
             case NUMBER:
+            {
                 push(atof(s));
                 break;
+            }
             case '+':
+            {
                 push(pop() + pop());
                 break;
+            }
             case '*':
+            {
                 push(pop() * pop());
                 break;
+            }
             case '-':
+            {
                 op2 = pop();
                 push(pop() - op2); /* The order in which two pop()s are evaluated is not defined */
                 break;
+            }
             case '/':
+            {
                 op2 = pop();
                 if (op2 != 0.0)
                 {
@@ -64,7 +73,9 @@ int main()
                     printf("Error: zero divisor\n");
                 }                
                 break;
+            }
             case '%':
+            {
                 op2 = pop();
                 if (op2 != 0.0)
                 {
@@ -75,7 +86,9 @@ int main()
                     printf("Error: zero divisor\n");
                 }                
                 break;
+            }
             case '\n':
+            {
                 if (pop_and_print)
                 {
                     printf("\t%.8g\n", pop());
@@ -83,10 +96,13 @@ int main()
                 }
                 pop_and_print = 1;
                 break;
+            }
             case '?': /* print the top of the stack */
+            {
                 pop_and_print = 0;
-                (sp > 0) ? printf("\t%.8g\n", val[sp]) : printf("Stack is empty\n");
+                (sp > 0) ? printf("\t%.8g\n", val[sp - 1]) : printf("Stack is empty\n");
                 break;
+            }
             case '~': /* swap the top two elements */
             {
                 pop_and_print = 0;
@@ -100,9 +116,28 @@ int main()
                 printf("Error: Need more than 1 elements on the stack to swap\n");
                 break;
             }
+            case '#': /* duplicate */
+            {
+                pop_and_print = 0;
+                if (sp < MAXVAL)
+                {
+                    push(val[sp - 1]);
+                    break;
+                }
+                printf("Error: stack full, can't duplicate\n");
+                break;
+            }
+            case '!': /* clear the stack */
+            {
+                pop_and_print = 0;
+                sp = 0;
+                break;
+            }
             default:
+            {
                 printf("Error: unknown command %s\n", s);
                 break;
+            }
         }
     }
 
