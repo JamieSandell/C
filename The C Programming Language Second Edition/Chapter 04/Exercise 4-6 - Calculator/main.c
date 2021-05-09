@@ -1,6 +1,6 @@
 /* Add commands for handling variables. (It's easy to provide
 twenty-six variables with single-letter names.) Add a variable for the most
-recenly value. */
+recently printed value. */
 
 #include <math.h> /* for fmod */
 #include <stdio.h>
@@ -235,7 +235,7 @@ void ungetch(int);
 /* getop: get next operator or numeric operand
 returns the NUMBER symbol if a number has been parsed,
 the NAME symbol if a mathematical name has been parsed,
-otherwise returns -1. */
+otherwise returns the integer representation of the character read in. */
 int getop(char s[])
 {
     int i, c;
@@ -243,15 +243,25 @@ int getop(char s[])
     while ((s[0] = c = getch()) == ' ' || c == '\t')
         ;
     s[1] = '\0';
-    if (isalpha)
+    i = 0;
+    if (isalpha(c))
     {
+        while (isalpha(c))
+        {
+            s[i++] = c;
+            c = getch();
+        }
+        if (c != EOF)
+        {
+            ungetch(c); /* Read one too many characters so put it back in the buffer */
+        }
+        s[i] = '\0';
         return NAME;
     }
     if (!isdigit(c) && c != '.')
     {
-        return -1; /* not a number */
+        return c; /* not a number */
     }
-    i = 0;
     if (isdigit(c)) /* collect integer part */
     {
         while (isdigit(s[++i] = c = getch()))
