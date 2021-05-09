@@ -1,4 +1,4 @@
-/* Add access to library functions like sin, ex[, and pow. See
+/* Add access to library functions like sin, exp, and pow. See
 <math.h> in Appendix B, Section 4. */
 
 #include <math.h> /* for fmod */
@@ -84,6 +84,37 @@ int main()
                 {
                     printf("Error: zero divisor\n");
                 }                
+                break;
+            }
+            case '^':
+            {
+                if (sp > 1)
+                {
+                    op2 = pop();
+                    push(pow(pop(), op2));
+                    break;
+                }
+                printf("Error: Not enough elements on the stack for ^\n");
+                break;
+            }
+            case 'e':
+            {
+                if (sp > 0)
+                {
+                    push(exp(pop()));
+                    break;
+                }
+                printf("Error: Not enough elements on the stack for e\n");
+                break;
+            }
+            case 's':
+            {
+                if (sp > 0)
+                {
+                    push(sin(pop()));
+                    break;
+                }
+                printf("Error: Not enough elements on the stack for s\n");
                 break;
             }
             case '\n':
