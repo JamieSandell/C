@@ -15,6 +15,7 @@ recently printed value. */
 
 int sp = 0; /* next free stack position */
 double val[MAXVAL]; /* value stack */
+int pop_and_print = 1;
 
 int getop(char s[]);
 void math_function(char s[]);
@@ -36,9 +37,9 @@ double pop(void);
 int main()
 {
     int type;
+    double v; /* most recently printed value */
     double op2;
     char s[MAXOP];
-    int pop_and_print = 1;
 
     double variable[ALPHABET];
     for (int i = 0; i < ALPHABET; i++)
@@ -86,6 +87,7 @@ int main()
                 else
                 {
                     printf("Error: zero divisor\n");
+                    pop_and_print = 0;
                 }                
                 break;
             }
@@ -99,6 +101,7 @@ int main()
                 else
                 {
                     printf("Error: zero divisor\n");
+                    pop_and_print = 0;
                 }                
                 break;
             }
@@ -111,16 +114,23 @@ int main()
                     break;
                 }
                 printf("Error: Not enough elements on the stack for ^\n");
+                pop_and_print = 0;
                 break;
             }
             case '\n':
             {
                 if (pop_and_print)
                 {
-                    printf("\t%.8g\n", pop());
+                    v = pop();
+                    printf("\t%.8g\n", v);
                     break;
                 }
                 pop_and_print = 1;
+                break;
+            }
+            case '$': /* most recently printed value */
+            {
+                push(v);
                 break;
             }
             case '?': /* print the top of the stack */
@@ -140,6 +150,7 @@ int main()
                     break;
                 }
                 printf("Error: Need more than 1 elements on the stack to swap\n");
+                pop_and_print = 0;
                 break;
             }
             case '#': /* duplicate */
@@ -151,6 +162,7 @@ int main()
                     break;
                 }
                 printf("Error: stack full, can't duplicate\n");
+                pop_and_print = 0;
                 break;
             }
             case '!': /* clear the stack */
@@ -162,6 +174,7 @@ int main()
             default:
             {
                 printf("Error: unknown command %s\n", s);
+                pop_and_print = 0;
                 break;
             }
         }
@@ -182,6 +195,7 @@ void math_function(char s[])
         else
         {
             printf("Error: Not enough elements on the stack for sin\n");
+            pop_and_print = 0;
         }
         return;
     }
@@ -194,10 +208,12 @@ void math_function(char s[])
         else
         {
             printf("Error: Not enough elements on the stack for exp\n");
+            pop_and_print = 0;
         }
         return;
     }
     printf("Error: %s is not a valid mathematical function\n", s);
+    pop_and_print = 0;
 }
 
 /* push: push f onto value stack */
