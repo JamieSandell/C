@@ -10,7 +10,7 @@ recently printed value. */
 #define ALPHABET 26 /* number of letters in the alphabet */
 #define MAXOP 100 /* max size of operand or operator */
 #define NUMBER '0' /* signal that a number was found */
-#define NAME '1' /* signale that a mathematial name was found such as sin */
+#define NAME '1' /* signal that a mathematial name was found such as sin */
 #define MAXVAL 100 /* maximum depth of val stack */
 
 int sp = 0; /* next free stack position */
@@ -136,7 +136,15 @@ int main()
             case '?': /* print the top of the stack */
             {
                 pop_and_print = 0;
-                (sp > 0) ? printf("\t%.8g\n", val[sp - 1]) : printf("Stack is empty\n");
+                if (sp > 0)
+                {
+                    v = val[sp - 1];
+                    printf("\t%.8g\n", v);
+                }
+                else
+                {
+                    printf("Stack is empty\n");
+                }
                 break;
             }
             case '~': /* swap the top two elements */
