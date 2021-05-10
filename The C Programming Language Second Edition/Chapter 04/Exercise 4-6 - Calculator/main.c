@@ -10,12 +10,14 @@ recently printed value. */
 #define ALPHABET 26 /* number of letters in the alphabet */
 #define MAXOP 100 /* max size of operand or operator */
 #define NUMBER '0' /* signal that a number was found */
-#define NAME '1' /* signal that a mathematial name was found such as sin */
+#define NAME '1' /* signal that a mathematical name was found such as sin */
+#define VARIABLE '2' /* signal that a variable was found */
 #define MAXVAL 100 /* maximum depth of val stack */
 
 int sp = 0; /* next free stack position */
 double val[MAXVAL]; /* value stack */
 int pop_and_print = 1;
+int assignment = 0; /* signals if we need to assign to a variable (variable[i])
 
 int getop(char s[]);
 void math_function(char s[]);
@@ -59,6 +61,23 @@ int main()
             case NAME:
             {
                 math_function(s);
+                break;
+            }
+            case VARIABLE:
+            {
+                if (!assignment)
+                {
+                    /* 3 A =
+                    should assign 3 to A
+
+                    2 A +
+                    should add 2 and A together and output 5 */
+                    if(variable)
+                }
+                else
+                {
+                    assignment = 0;
+                }                
                 break;
             }
             case '+':
@@ -268,9 +287,9 @@ int getop(char s[])
         ;
     s[1] = '\0';
     i = 0;
-    if (isalpha(c))
+    if (islower(c)) /* Potentially a mathematical function */
     {
-        while (isalpha(c))
+        while (islower(c))
         {
             s[i++] = c;
             c = getch();
@@ -281,6 +300,10 @@ int getop(char s[])
         }
         s[i] = '\0';
         return NAME;
+    }
+    if (isupper(c)) /* Variable */
+    {
+
     }
     if (!isdigit(c) && c != '.')
     {
