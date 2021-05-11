@@ -2,12 +2,15 @@
 twenty-six variables with single-letter names.) Add a variable for the most
 recently printed value. */
 
+#include <ctype.h>
 #include <math.h> /* for fmod */
 #include <stdio.h>
 #include <stdlib.h> /* for atof() */
 #include <string.h>
 
 #define ALPHABET 26 /* number of letters in the alphabet */
+#define UPPER_ALPHA_START 65 /* ASCII table */
+#define UPPER_ALPHA_END 90
 #define MAXOP 100 /* max size of operand or operator */
 #define NUMBER '0' /* signal that a number was found */
 #define NAME '1' /* signal that a mathematical name was found such as sin */
@@ -17,7 +20,8 @@ recently printed value. */
 int sp = 0; /* next free stack position */
 double val[MAXVAL]; /* value stack */
 int pop_and_print = 1;
-int assignment = 0; /* signals if we need to assign to a variable (variable[i])
+int assignment = 0; /* signals if we need to assign to a variable (variables[i]) */
+char variable = ' '; /* stores the single variable letter last used, e.g. 'A' */
 
 int getop(char s[]);
 void math_function(char s[]);
@@ -43,10 +47,10 @@ int main()
     double op2;
     char s[MAXOP];
 
-    double variable[ALPHABET];
+    double variables[ALPHABET];
     for (int i = 0; i < ALPHABET; i++)
     {
-        variable[i] = 0.0;
+        variables[i] = 0.0;
     }
 
     while ((type = getop(s)) != EOF)
@@ -65,19 +69,27 @@ int main()
             }
             case VARIABLE:
             {
-                if (!assignment)
-                {
-                    /* 3 A =
-                    should assign 3 to A
+                /* 3 A =
+                should assign 3 to A
 
-                    2 A +
-                    should add 2 and A together and output 5 */
-                    if(variable)
+                2 A +
+                should add 2 and A together and output 5 */
+                if (variable >= UPPER_ALPHA_START && variable <= UPPER_ALPHA_END)
+                {
+                    push(variables[variable - UPPER_ALPHA_START]); /* e.g. if variable and UPPER_ALPHA_START == 0 then it uses 0 as the index */
                 }
                 else
                 {
-                    assignment = 0;
-                }                
+                    pop_and_print = 0;
+                    printf("Error: %s is not in the range %s to %s\n", s, toascii(UPPER_ALPHA_START), toascii(UPPER_ALPHA_END));
+                }               
+                break;
+            }
+            case '=':
+            {
+                pop(); /* disregard the second operand */
+                variables[variable - UPPER_ALPHA_START] = pop();
+                pop_and_print = 0;
                 break;
             }
             case '+':
@@ -270,8 +282,6 @@ double pop(void)
     }
 }
 
-#include <ctype.h>
-
 int getch(void);
 void ungetch(int);
 
@@ -303,7 +313,8 @@ int getop(char s[])
     }
     if (isupper(c)) /* Variable */
     {
-
+        variable = c;
+        return VARIABLE;
     }
     if (!isdigit(c) && c != '.')
     {
