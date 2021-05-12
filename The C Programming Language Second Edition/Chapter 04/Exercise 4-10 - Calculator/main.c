@@ -15,6 +15,7 @@ this approach */
 #define NUMBER '0' /* signal that a number was found */
 #define NAME '1' /* signal that a mathematical name was found such as sin */
 #define VARIABLE '2' /* signal that a variable was found */
+#define MAX_LINE 100
 #define MAXVAL 100 /* maximum depth of val stack */
 
 int sp = 0; /* next free stack position */
@@ -22,6 +23,9 @@ double val[MAXVAL]; /* value stack */
 int pop_and_print = 1;
 int assignment = 0; /* signals if we need to assign to a variable (variables[i]) */
 char variable = ' '; /* stores the single variable letter last used, e.g. 'A' */
+char line[MAX_LINE]; /* holds one line at a time of input */
+unsigned line_index = 0; /* used for processing full line input in getops */
+int line_length = 0; /* length of the line, upto but not including the null terminating character */
 
 int getop(char s[]);
 void math_function(char s[]);
@@ -282,8 +286,8 @@ double pop(void)
     }
 }
 
-int getch(void);
-void ungetch(int);
+/* int getch(void); */
+/* void ungetch(int); */
 void ungets(char s[]);
 
 /* getop: get next operator or numeric operand
@@ -292,9 +296,15 @@ the NAME symbol if a mathematical name has been parsed,
 otherwise returns the integer representation of the character read in. */
 int getop(char s[])
 {
+    if (line_index == line_length)
+    {
+        get_line(s, )
+        line_index = 0;
+    }
+
     int i, c;
 
-    while ((s[0] = c = getch()) == ' ' || c == '\t')
+    while ((s[0] = c = line[line_index++]) == ' ' || c == '\t')
         ;
     s[1] = '\0';
     i = 0;
@@ -344,12 +354,15 @@ int getop(char s[])
 int buf[BUFSIZE]; /* buffer for ungetch */
 int bufp = 0; /* next free position in buf */
 
-int getch(void) /* get a (possibly pushed back) character */
+/*
+int getch(void)
 {
     return (bufp > 0) ? buf[--bufp] : getchar();
 }
+*/
 
-void ungetch(int c) /* push character back on input */
+/*
+void ungetch(int c)/
 {
     if (bufp >= BUFSIZE)
     {
@@ -357,19 +370,10 @@ void ungetch(int c) /* push character back on input */
     }
     else
     {
-        /* EOF is defined as a negative value, and our buffer is a char array.
-        A char array can't hold negative numbers.
-        We could either change the char array to an array of ints, or put an if check here for EOF.
-        if (c != EOF)
-        {
-            buf[bufp++] = c;
-        }
-        
-        essentially ignoring input if it's EOF. I've opted for the int array to avoid another branch check.
-         */
         buf[bufp++] = c;
     }
 }
+*/
 
 /* It makes sense to use and build upon what we already have so I've used ungetch. */
 void ungets(char s[])
