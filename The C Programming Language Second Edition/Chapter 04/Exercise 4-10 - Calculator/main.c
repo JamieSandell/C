@@ -15,7 +15,6 @@ this approach */
 #define NUMBER '0' /* signal that a number was found */
 #define NAME '1' /* signal that a mathematical name was found such as sin */
 #define VARIABLE '2' /* signal that a variable was found */
-#define MAX_LINE 100
 #define MAXVAL 100 /* maximum depth of val stack */
 
 int sp = 0; /* next free stack position */
@@ -23,10 +22,11 @@ double val[MAXVAL]; /* value stack */
 int pop_and_print = 1;
 int assignment = 0; /* signals if we need to assign to a variable (variables[i]) */
 char variable = ' '; /* stores the single variable letter last used, e.g. 'A' */
-char line[MAX_LINE]; /* holds one line at a time of input */
-unsigned line_index = 0; /* used for processing full line input in getops */
+char line[MAXOP]; /* holds one line of input at a time */
+unsigned line_index = 0;
 int line_length = 0; /* length of the line, upto but not including the null terminating character */
 
+int get_line(char s[], unsigned max_line_length);
 int getop(char s[]);
 void math_function(char s[]);
 void push(double f);
@@ -290,15 +290,31 @@ double pop(void)
 /* void ungetch(int); */
 void ungets(char s[]);
 
+int get_line(char s[], unsigned max_line_length)
+{
+    int c;
+    int i = 0;
+    while((c = getchar()) && c < max_line_length && c != '\n' && c != EOF)
+    {
+        s[i++] = c;
+    }
+    if (c == '\n' || c == EOF)
+    {
+        s[i++] = c;
+    }
+    s[i] = '\0';
+    return i;
+}
+
 /* getop: get next operator or numeric operand
 returns the NUMBER symbol if a number has been parsed,
 the NAME symbol if a mathematical name has been parsed,
 otherwise returns the integer representation of the character read in. */
 int getop(char s[])
 {
-    if (line_index == line_length)
+    if (line_index == line_length) /* end of the line, get the next */
     {
-        get_line(s, )
+        get_line(line, MAXOP);
         line_index = 0;
     }
 
@@ -313,11 +329,11 @@ int getop(char s[])
         while (islower(c))
         {
             s[i++] = c;
-            c = getch();
+            c = line[line_index++];
         }
         if (c != EOF)
         {
-            ungetch(c); /* Read one too many characters so put it back in the buffer */
+            line_index--; /* Read one too many characters so put it back in the buffer */
         }
         s[i] = '\0';
         return NAME;
@@ -329,58 +345,31 @@ int getop(char s[])
     }
     if (!isdigit(c) && c != '.')
     {
+        if (c == '\n')
+        {
+            line_index = line_length;
+        }
         return c; /* not a number */
     }
     if (isdigit(c)) /* collect integer part */
     {
-        while (isdigit(s[++i] = c = getch()))
+        while (isdigit(s[++i] = c = line[line_index++]))
             ;
     }
     if (c == '.') /* collect fraction part */
     {
-        while(isdigit(s[++i] = c = getch()))
+        while(isdigit(s[++i] = c = line[line_index++]))
             ;
     }
     s[i] = '\0';
     if (c != EOF)
     {
-        ungetch(c);
+        line[line_index--];
     }
     return NUMBER;
 }
 
-#define BUFSIZE 100
-
-int buf[BUFSIZE]; /* buffer for ungetch */
-int bufp = 0; /* next free position in buf */
-
-/*
-int getch(void)
-{
-    return (bufp > 0) ? buf[--bufp] : getchar();
-}
-*/
-
-/*
-void ungetch(int c)/
-{
-    if (bufp >= BUFSIZE)
-    {
-        printf("ungetch: too many characters\n");
-    }
-    else
-    {
-        buf[bufp++] = c;
-    }
-}
-*/
-
-/* It makes sense to use and build upon what we already have so I've used ungetch. */
 void ungets(char s[])
 {
-    size_t i = strlen(s);
-    while(i > 0)
-    {
-        ungetch(s[--i]);
-    }
+    line_index = 0;
 }
