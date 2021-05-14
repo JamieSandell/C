@@ -29,8 +29,7 @@ void itoa(int n, char s[])
         s[i++] = '-';
     }
     s[i] = '\0';
-    reverse(s);
-    
+    reverse(s);    
 }
 
 void reverse(char s[])
@@ -44,3 +43,21 @@ void reverse(char s[])
     }
 }
  */
+
+#include <stdio.h>
+
+void itoa(int n, char s[])
+{
+    static int i;
+    static int sign = 0;
+
+    if (sign == 0) /* first call of the function/not recursed yet */
+    {
+        
+    }
+}
+
+int main()
+{
+    return 0;
+}
