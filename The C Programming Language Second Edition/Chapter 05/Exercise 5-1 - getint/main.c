@@ -11,16 +11,11 @@ void ungetch(int c);
 
 int main()
 {
-    char input[] = {"100\n"};
-    size_t length = strlen(input);
-    int x;
+    int input;
+    int *p = &input;
+    int return_value = getint(p);
 
-    for (int i = 0; i < length; i++)
-    {
-        ungetch(input[i]);
-    }
-
-    printf("int from input: %i\n", getint(&x));
+    printf("int from input[0]: is %i\n", input);
 
     return 0;
 }
