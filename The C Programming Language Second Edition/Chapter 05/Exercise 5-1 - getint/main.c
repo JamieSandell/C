@@ -15,7 +15,22 @@ int main()
     int *p = &input;
     int return_value = getint(p);
 
-    printf("int from input[0]: is %i\n", input);
+    switch(return_value)
+    {
+        case 0:
+        {
+            printf("Error: Not a number.\n");
+        } break;
+        case '-':
+        case '+':
+        {
+            printf("Error: Not a number after - or +\n");
+        } break;
+        default:
+        {
+            printf("int from input[0]: is %i\n", input);
+        } break;
+    }
 
     return 0;
 }
@@ -44,7 +59,18 @@ int getint(int *pn)
     sign = (c == '-') ? -1 : 1;
     if (c == '+' || c == '-')
     {
+        int d = c; /* remember the sign character */
         c = getch();
+        if (!isdigit(c))
+        {
+            if (c != EOF)
+            {
+                /* next character wasn't a digit, and wasn't EOF so push back the sign character and then the character just read in back on the buffer */
+                ungetch(d);                
+            }
+            ungetch(c);
+            return(d); /* to indiciate what happened */            
+        }
     }
     for (*pn = 0; isdigit(c); c = getch())
     {
