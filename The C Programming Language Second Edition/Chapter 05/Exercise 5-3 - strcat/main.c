@@ -22,11 +22,11 @@ int main()
 {
     char surname[] = "Sandell";
     char firstname[50] = "Jamie";
-    char space = ' ';
+    char space[] = " ";
 
     printf("firstname: %s, surname: %s\n", firstname, surname);
     printf("my_strcat(%s, ' '): ", firstname);
-    my_strcat(firstname, &space);
+    my_strcat(firstname, space);
     printf("%s\n", firstname);
     printf("my_strcat(%s, %s): ", firstname, surname);
     my_strcat(firstname, surname);
@@ -37,9 +37,23 @@ int main()
 
 void my_strcat(char *s, char *t)
 {
-    while (*s++)
+    while(*s++)
         ;
-    s--;
+    /* Equivalent of the above, be aware that the post increment operator is executed after the condition is checked
+    while(*s != 0)
+    {
+        s++;
+    }
+    s++; */
+    s--; /* move back to the null terminated character */
     while(*s++ = *t++)
         ;
+    /* Equivalent of the above
+    while(*t != 0)
+    {
+        *s = *t;
+        s++;
+        t++;
+    }
+    *s = *t */
 }
