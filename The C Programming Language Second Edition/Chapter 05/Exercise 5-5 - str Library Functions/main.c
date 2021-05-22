@@ -6,13 +6,18 @@ Full descriptions are in Appendix B. */
 #include <stdio.h>
 
 size_t strlen(const char *s);
+char *strncat(char *s, const char *t, size_t n);
 char *strncpy(char *s, const char *t, size_t n);
 
 int main()
 {
     char name[] = "Jamie";
-    char copy_to[10];
+    char copy_to[10] = "Bob";
+    printf("Copying name[](%s) to copy_to[](%s)\n", name, copy_to);
     strncpy(copy_to, name, 10);
+    printf("Copied...copy_to[] == %s\n\n", copy_to);
+
+
 
     return 0;
 }
@@ -27,6 +32,26 @@ size_t strlen(const char *s)
         length++;
     }
     return length;
+}
+
+/* Concatenate at most n characters of string t to s, terminate s with '\0'; return s */
+char *strncat(char *s, const char *t, size_t n)
+{
+    size_t t_length = strlen(t);
+    if (n > t_length)
+    {
+        printf("Error: %s has less than %i characters, so cannot concat them to %s\n", t, n, s);
+        return s;
+    }
+    size_t s_length = strlen(s);
+    if (s_length + n > s_length)
+    {
+        printf("Error: Not enough room in %s to concat %i characters from %s\n", s, n, t);
+    }
+
+    
+
+    return s;    
 }
 
 /* Copy at most n characters of string t to s; return s.
