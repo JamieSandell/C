@@ -7,6 +7,7 @@ Full descriptions are in Appendix B. */
 
 size_t strlen(const char *s);
 char *strncat(char *s, const char *t, size_t n);
+int strncmp(const char *s, const char *t, size_t n);
 char *strncpy(char *s, const char *t, size_t n);
 
 int main()
@@ -17,7 +18,16 @@ int main()
     strncpy(copy_to, name, 10);
     printf("Copied...copy_to[] == %s\n\n", copy_to);
 
+    char fullName[100] = "Jamie";
+    char surname[] = "Sandell";
+    printf("Concatenate %s and %s: ", fullName, surname);
+    strncat(fullName, surname, 100);
+    printf("%s\n", fullName);
 
+    char jammy[] = "Jammy";
+    int chars_to_compare = 3;
+    printf("Comparing the first %i characters of %s with %s, 0 for match, negative or positive for less than/greater than: %i\n",
+        chars_to_compare, name, jammy, strncmp(name, jammy, chars_to_compare));
 
     return 0;
 }
@@ -38,20 +48,35 @@ size_t strlen(const char *s)
 char *strncat(char *s, const char *t, size_t n)
 {
     size_t t_length = strlen(t);
-    if (n > t_length)
+    while(*s != '\0')
     {
-        printf("Error: %s has less than %i characters, so cannot concat them to %s\n", t, n, s);
-        return s;
-    }
-    size_t s_length = strlen(s);
-    if (s_length + n > s_length)
-    {
-        printf("Error: Not enough room in %s to concat %i characters from %s\n", s, n, t);
+        s++;
     }
 
-    
+    int i;
+    for (i = 0; i < n && i < t_length; i++)
+    {
+        *(s + i) = *(t + i);
+    }
+    *(s + i) = '\0';    
 
     return s;    
+}
+
+/* Compare at most n characters of string s to string t;
+return <0 if s<t, 0 if s==t, or >0 if s>t. */
+int strncmp(const char *s, const char *t, size_t n)
+{
+    int s_length = strlen(s);
+    int i;
+    for(i = 0; i < n; i++)
+    {
+        if (*(s + i) != *(t + i))
+        {
+            return (*(s + i) < *(t + i)) ? -1 : 1;
+        }
+    }
+    return 0;
 }
 
 /* Copy at most n characters of string t to s; return s.
