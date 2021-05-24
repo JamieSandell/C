@@ -11,7 +11,8 @@ char *line_ptr[MAX_LINES]; /* pointers to text lines */
 char *alloc(int n);
 void afree(char *p);
 
-int readlines(char *line_ptr[], int nlines);
+int get_line(char *s, int lim);
+int readlines(char *line_ptr[], int max_lines);
 void writelines(char *line_ptr[], int nlines);
 
 void qsort(char *lineptr[], int left, int right);
@@ -19,7 +20,19 @@ void qsort(char *lineptr[], int left, int right);
 /* sort input lines */
 int main()
 {
-    return 0;
+    int nlines; /* number of input lines read */
+
+    if ((nlines = readlines(line_ptr, MAX_LINES)) >= 0)
+    {
+        qsort(line_ptr, 0, nlines - 1);
+        writelines(line_ptr, nlines);
+        return 0;
+    }
+    else
+    {
+        printf("Error: input too big to sort\n");
+        return 1;
+    };
 }
 
 #define ALLOC_SIZE 10000 /* size of available space */
@@ -49,5 +62,57 @@ void afree(char *p)
     if (p >= allocbuf && p < allocbuf + ALLOC_SIZE) /* memory to free resides within our buffer */
     {
         allocp = p;
+    }
+}
+
+int get_line(char *s, int lim)
+{
+    int c, i;
+
+    i = 0;
+    while(--lim > 0 && (c = getchar()) != EOF && c != '\n')
+    {
+        *(s + i++) = c;
+    }
+    if (c == '\n')
+    {
+        *(s + i++) = c;
+    }
+    *(s + i) = '\0';
+
+    return i;
+}
+
+#define MAX_LEN 1000 /* max length of any input line */
+
+/* readlines: read input lines */
+int readlines(char *line_ptr[], int max_lines)
+{
+    int len, nlines;
+    char *p, line[MAX_LEN];
+
+    nlines = 0;
+    while ((len = get_line(line, MAX_LEN)) > 0)
+    {
+        if (nlines >= max_lines || (p = alloc(len)) == NULL) /* exceeded line count or not enough room to alloc from the buffer */
+        {
+            return -1;
+        }
+        else
+        {
+            line[len - 1] = '\0'; /* delete the newline character */
+            strcpy(p, line); /* p now points to memory from alloc, copy the line just read in to it */
+            line_ptr[nlines++] = p; /* set the current pointer in the array to point to the same address as p, then increment # lines read in */
+        }
+    }
+    return nlines;
+}
+
+/* writelines: write output lines */
+void writelines(char *line_ptr[], int nlines)
+{
+    while(--nlines > 0)
+    {
+        printf("%s\n", *line_ptr++);
     }
 }
