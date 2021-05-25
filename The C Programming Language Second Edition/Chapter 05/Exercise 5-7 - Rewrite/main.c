@@ -5,6 +5,7 @@ rather than calling alloc to maintain storage. How much faster is the program? *
 #include <string.h>
 
 #define MAX_LINES 5000 /* max #lines to be sorted */
+#define MAX_LINE_STORE 10000 /* size of available space */
 
 char *line_ptr[MAX_LINES]; /* pointers to text lines */
 
@@ -12,7 +13,7 @@ char *alloc(int n);
 void afree(char *p);
 
 int get_line(char *s, int lim);
-int readlines(char *line_ptr[], int max_lines);
+int readlines(char *line_ptr[], int max_lines, char line_store[]);
 void writelines(char *line_ptr[], int nlines);
 
 void qsort(char *lineptr[], int left, int right);
@@ -21,9 +22,10 @@ void swap(char *v[], int i, int j);
 /* sort input lines */
 int main()
 {
+    char line_store[MAX_LINE_STORE];
     int nlines; /* number of input lines read */
 
-    if ((nlines = readlines(line_ptr, MAX_LINES)) >= 0)
+    if ((nlines = readlines(line_ptr, MAX_LINES, line_store)) >= 0)
     {
         qsort(line_ptr, 0, nlines - 1);
         writelines(line_ptr, nlines);
@@ -87,23 +89,26 @@ int get_line(char *s, int lim)
 #define MAX_LEN 1000 /* max length of any input line */
 
 /* readlines: read input lines */
-int readlines(char *line_ptr[], int max_lines)
+int readlines(char *line_ptr[], int max_lines, char line_store[])
 {
     int len, nlines;
     char *p, line[MAX_LEN];
 
+    p = line_store;
     nlines = 0;
     while ((len = get_line(line, MAX_LEN)) > 0)
     {
-        if (nlines >= max_lines || (p = alloc(len)) == NULL) /* exceeded line count or not enough room to alloc from the buffer */
+        if (nlines >= max_lines || p + len > line_store + MAX_LINE_STORE) /* exceeded line count or not enough room in the line_store */
         {
             return -1;
         }
         else
         {
             line[len - 1] = '\0'; /* delete the newline character */
-            strcpy(p, line); /* p now points to memory from alloc, copy the line just read in to it */
-            line_ptr[nlines++] = p; /* set the current pointer in the array to point to the same address as p, then increment # lines read in */
+            strcpy(p, line); /* copy the line just read into where p points to in line_store*/
+            line_ptr[nlines++] = p; /* set the current pointer in the array to point to the same address as p points to in line_store,
+                then increment # lines read in */
+            p += len; /* point p to the next free address in line_ptr */
         }
     }
     return nlines;
