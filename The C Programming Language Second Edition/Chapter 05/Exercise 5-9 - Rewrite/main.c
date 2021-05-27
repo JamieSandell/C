@@ -29,7 +29,9 @@ int day_of_year(int year, int day, int month)
     leap = year % 4 == 0 && year % 100 != 0 || year % 400 == 0;
     for(i = 1; i < month; i++)
     {
-        day += *(*(day_table + leap) + i);
+        day += *(*(day_table + leap) + i); /* 2D array is conceptual, in memory each element of *day_table[] is a 1D array. 
+        *(day_table + leap) returns the address of the "leap array" and then points to that address + i
+        then that is dereferenced to get the actual value. */
     }
     return day;
 }
