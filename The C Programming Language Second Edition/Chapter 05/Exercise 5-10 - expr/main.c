@@ -31,9 +31,6 @@ char line[MAXOP]; /* holds one line of input at a time */
 unsigned line_index = 0;
 int line_length = 0; /* length of the line, upto but not including the null terminating character */
 
-int get_line(char s[], unsigned max_line_length);
-int getop(char s[]);
-void math_function(char s[]);
 void push(double f);
 double pop(void);
 
@@ -65,11 +62,19 @@ int main(int argc, char *argv[])
 
     while(--argc > 0) /* at least more than one argument passed in, as technically the program name counts as 1 argument */
     {
-        *++argv; /* point to the next char array, as the first one is the program name */
-        /* get the argument type */
-        if (!isdigit(c = **argv) && strlen(*argv) == 1) /* e.g. c = argv[1][0]
+        *++argv; /* point to the next address of full 1D (char) array, as the first one is the program name,
+        then dereference it to get the address of the first element in said array. */
+
+        /* **argv dereferences what argv points to (pointer to address of full 1D array), to give the address of the first element of said array,
+        and then dereferences that to give the actual value (first element in that 1D array). */
+        c = **argv;
+        if (!isdigit(c))
         {
-            type = c
+            type =  c; /* not a number */
+        }
+        else
+        {
+            type = NUMBER;
         }
         switch (type)
         {
@@ -78,42 +83,12 @@ int main(int argc, char *argv[])
                 push(atof(*argv));
                 break;
             }
-            case NAME:
-            {
-                math_function(*argv);
-                break;
-            }
-            case VARIABLE:
-            {
-                /* 3 A =
-                should assign 3 to A
-
-                2 A +
-                should add 2 and A together and output 5 */
-                if (variable >= UPPER_ALPHA_START && variable <= UPPER_ALPHA_END)
-                {
-                    push(variables[variable - UPPER_ALPHA_START]); /* e.g. if variable and UPPER_ALPHA_START == 0 then it uses 0 as the index */
-                }
-                else
-                {
-                    pop_and_print = 0;
-                    printf("Error: %s is not in the range %s to %s\n", s, toascii(UPPER_ALPHA_START), toascii(UPPER_ALPHA_END));
-                }               
-                break;
-            }
-            case '=':
-            {
-                pop(); /* disregard the second operand */
-                variables[variable - UPPER_ALPHA_START] = pop();
-                pop_and_print = 0;
-                break;
-            }
             case '+':
             {
                 push(pop() + pop());
                 break;
             }
-            case '*':
+            case '*': /* need to escape this if calling from the shell */
             {
                 push(pop() * pop());
                 break;
@@ -164,68 +139,6 @@ int main(int argc, char *argv[])
                 pop_and_print = 0;
                 break;
             }
-            case '\n':
-            {
-                if (pop_and_print)
-                {
-                    v = pop();
-                    printf("\t%.8g\n", v);
-                    break;
-                }
-                pop_and_print = 1;
-                break;
-            }
-            case '$': /* most recently printed value */
-            {
-                push(v);
-                break;
-            }
-            case '?': /* print the top of the stack */
-            {
-                pop_and_print = 0;
-                if (sp > 0)
-                {
-                    v = val[sp - 1];
-                    printf("\t%.8g\n", v);
-                }
-                else
-                {
-                    printf("Stack is empty\n");
-                }
-                break;
-            }
-            case '~': /* swap the top two elements */
-            {
-                pop_and_print = 0;
-                if (sp > 1)
-                {
-                    double temp = val[sp - 1];
-                    val[sp - 1] = val[sp - 2];
-                    val[sp - 2] = temp;
-                    break;
-                }
-                printf("Error: Need more than 1 elements on the stack to swap\n");
-                pop_and_print = 0;
-                break;
-            }
-            case '#': /* duplicate */
-            {
-                pop_and_print = 0;
-                if (sp < MAXVAL)
-                {
-                    push(val[sp - 1]);
-                    break;
-                }
-                printf("Error: stack full, can't duplicate\n");
-                pop_and_print = 0;
-                break;
-            }
-            case '!': /* clear the stack */
-            {
-                pop_and_print = 0;
-                sp = 0;
-                break;
-            }
             default:
             {
                 printf("Error: unknown command %s\n", s);
@@ -235,40 +148,8 @@ int main(int argc, char *argv[])
         }
     }
 
+    printf("Final result = %lf\n", pop());
     return 0;
-}
-
-/* perform a mathematical function based on s */
-void math_function(char s[])
-{
-    if (strcmp(s, "sin") == 0)
-    {
-        if (sp > 0)
-        {
-            push(sin(pop()));
-        }
-        else
-        {
-            printf("Error: Not enough elements on the stack for sin\n");
-            pop_and_print = 0;
-        }
-        return;
-    }
-    if (strcmp(s, "exp") == 0)
-    {
-        if (sp > 0)
-        {
-            push(exp(pop()));
-        }
-        else
-        {
-            printf("Error: Not enough elements on the stack for exp\n");
-            pop_and_print = 0;
-        }
-        return;
-    }
-    printf("Error: %s is not a valid mathematical function\n", s);
-    pop_and_print = 0;
 }
 
 /* push: push f onto value stack */
@@ -296,86 +177,4 @@ double pop(void)
         printf("Error: stack empty\n");
         return 0.0;
     }
-}
-
-/* int getch(void); */
-/* void ungetch(int); */
-void ungets(char s[]);
-
-int get_line(char s[], unsigned max_line_length)
-{
-    int c;
-    int i = 0;
-    while((c = getchar()) && c < max_line_length && c != '\n' && c != EOF)
-    {
-        s[i++] = c;
-    }
-    if (c == '\n' || c == EOF)
-    {
-        s[i++] = c;
-    }
-    s[i] = '\0';
-    return i;
-}
-
-/* getop: get next operator or numeric operand
-returns the NUMBER symbol if a number has been parsed,
-the NAME symbol if a mathematical name has been parsed,
-otherwise returns the integer representation of the character read in. */
-int getop(char s[])
-{
-    int i, c;
-
-    while ((s[0] = c = line[line_index++]) == ' ' || c == '\t')
-        ;
-    s[1] = '\0';
-    i = 0;
-    if (islower(c)) /* Potentially a mathematical function */
-    {
-        while (islower(c))
-        {
-            s[i++] = c;
-            c = line[line_index++];
-        }
-        if (c != EOF)
-        {
-            line_index--; /* Read one too many characters so put it back in the buffer */
-        }
-        s[i] = '\0';
-        return NAME;
-    }
-    if (isupper(c)) /* Variable */
-    {
-        variable = c;
-        return VARIABLE;
-    }
-    if (!isdigit(c) && c != '.')
-    {
-        if (c == '\n')
-        {
-            line_index = line_length;
-        }
-        return c; /* not a number */
-    }
-    if (isdigit(c)) /* collect integer part */
-    {
-        while (isdigit(s[++i] = c = line[line_index++]))
-            ;
-    }
-    if (c == '.') /* collect fraction part */
-    {
-        while(isdigit(s[++i] = c = line[line_index++]))
-            ;
-    }
-    s[i] = '\0';
-    if (c != EOF)
-    {
-        line[line_index--];
-    }
-    return NUMBER;
-}
-
-void ungets(char s[])
-{
-    line_index = 0;
 }
