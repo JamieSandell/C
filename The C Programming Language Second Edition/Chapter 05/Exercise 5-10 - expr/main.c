@@ -65,8 +65,8 @@ int main(int argc, char *argv[])
         *++argv; /* point to the next address of full 1D (char) array, as the first one is the program name,
         then dereference it to get the address of the first element in said array. */
 
-        /* **argv dereferences what argv points to (pointer to address of full 1D array), to give the address of the first element of said array,
-        and then dereferences that to give the actual value (first element in that 1D array). */
+        /* **argv dereferences what argv points to (which is the first element of the 1st, which is the base address of the 1st 1D array),
+        to give the address of the first element of said array, and then dereferences that to give the actual value (first element in that 1D array). */
         c = **argv;
         if (!isdigit(c))
         {
