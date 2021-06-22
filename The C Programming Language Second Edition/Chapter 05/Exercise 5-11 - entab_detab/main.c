@@ -15,22 +15,8 @@ void detab(char source[], int source_length, char destination[], int destination
 
 int main()
 {
-    char line[(MAX_LINE_LENGTH + 1)]; //allow for the termination character
-    int line_length = 0;
-    int number_of_tabs = 0;
-    while ((line_length = get_line(line, MAX_LINE_LENGTH)) > 0)
-    {
-        printf("%s\n", line);
-
-        number_of_tabs = get_tabs(line, line_length);
-        printf("Number of tabs: %i\n", number_of_tabs);
-
-        int destination_length = calculate_destination_length(line, line_length, TAB_SIZE);
-        char destination[destination_length];
-        detab(line, line_length, destination, destination_length, TAB_SIZE);
-        printf("With tabs:\t%s\n", line);
-        printf("Without tabs:\t%s\n", destination);
-    }
+    return 0;
+}
 
 /* detab
 int main()
@@ -76,7 +62,6 @@ int main()
 
     return 0;
 }*/
-}
 
 /* For detab: Work out the destination array size for detabbing (replacing tabs with spaces)
     Includes space for the null terminating character in its calculation */
