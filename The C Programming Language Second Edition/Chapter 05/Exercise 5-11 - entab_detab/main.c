@@ -3,8 +3,10 @@ to accept a list of tab stops as arguments. Use the default tab settings
 if there are no arguments. */
 
 #include <stdio.h>
+#include <stdlib.h>
 
-#define TAB_SIZE 8 //number of spaces == to a tab
+#define TAB_SIZE 8 //default number of spaces == to a tab
+#define MAX_ARGUMENTS 100
 #define MAX_LINE_LENGTH 1000
 
 int calculate_destination_length(char line[], int line_length, int tab_size);
@@ -13,8 +15,28 @@ int get_line(char line[], int max_line_length);
 int get_tabs(char line[], int line_length);
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_size);
 
-int main()
+int main(int argc, char *argv[])
 {
+    if (argc > MAX_ARGUMENTS)
+    {
+        printf("Error: MAX_ARGUMENTS (%i) exceeded. Number of arguments passed in: %i\n", MAX_ARGUMENTS, argc);
+        return -1;
+    }
+    if (argc >= 2)
+    {
+        /* the first argument is the name of the exe, so >= 2 means arguments have been passed in */
+        /* validate the input, the tabstops need to be in ascending order */
+        int temp = 0;
+        for (int index = 1; index < argc; ++index)
+        {
+            int tab_stop = atoi(*(argv + index));
+            if (temp < tab_stop)
+            {
+                printf("Error: The tab stop arguments are not in ascending order.\n");
+                return -1;
+            }
+        }
+    }
     return 0;
 }
 
