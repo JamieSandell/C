@@ -9,7 +9,7 @@ if there are no arguments. */
 #define MAX_ARGUMENTS 100
 #define MAX_LINE_LENGTH 1000
 
-int calculate_destination_length(char line[], int line_length, int tab_size);
+int calculate_destination_length(char line[], int line_length, int tab_stops[]);
 int calculate_destination_size(char source[], int source_length, int tab_size);
 int get_line(char line[], int max_line_length);
 int get_tabs(char line[], int line_length);
@@ -43,12 +43,17 @@ int main(int argc, char *argv[])
         /* fill out the rest of the tab_stops with defaults */
         for (int i = argc; i < MAX_ARGUMENTS; ++i)
         {
-            tab_stops[i] = TAB_SIZE;
+            tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
         }
     }
     if (argc <= 2)
     {
         /* Build the tab_stops */
+        tab_stops[0] = TAB_SIZE;
+        for (int i = 1; i < MAX_ARGUMENTS; ++i)
+        {
+            tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
+        }
     }
     return 0;
 }
@@ -100,24 +105,25 @@ int main()
 
 /* For detab: Work out the destination array size for detabbing (replacing tabs with spaces)
     Includes space for the null terminating character in its calculation */
-int calculate_destination_length(char line[], int line_length, int tab_size)
+int calculate_destination_length(char line[], int line_length, int tab_stops[])
 {
     int characters_since_last_tab = 0;
     int destination_size = 0;
+    int tab_stop_index = 0;
     for (int i = 0; i < line_length; ++i)
     {
         if (line[i] == '\t')
         {
             /*increase the destination_size by the right amount of spaces by
             calculating the correct "width" from the last character to the current tab*/
-            destination_size = destination_size + tab_size - characters_since_last_tab;
+            destination_size += tab_stops[tab_stop_index++] - characters_since_last_tab;
             characters_since_last_tab = 0; //Reset the counter       
         }
         else
         {
             /*As long as the counter doesn't exceed the tab size we can easily work out how many
             spaces to swap a tab for when we hit a tab character*/        
-            if (characters_since_last_tab <= tab_size)
+            if (characters_since_last_tab <= tab_stops[tab_stop_index])
             {
                 ++characters_since_last_tab;
             }
