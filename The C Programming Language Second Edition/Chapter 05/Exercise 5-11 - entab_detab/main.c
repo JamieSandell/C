@@ -17,6 +17,8 @@ void detab(char source[], int source_length, char destination[], int destination
 
 int main(int argc, char *argv[])
 {
+    int tab_stops[MAX_ARGUMENTS];
+
     if (argc > MAX_ARGUMENTS)
     {
         printf("Error: MAX_ARGUMENTS (%i) exceeded. Number of arguments passed in: %i\n", MAX_ARGUMENTS, argc);
@@ -24,18 +26,29 @@ int main(int argc, char *argv[])
     }
     if (argc >= 2)
     {
-        /* the first argument is the name of the exe, so >= 2 means arguments have been passed in */
+        /* the first argument is the name of the exe, so >= 2 means user arguments have been passed in */
         /* validate the input, the tabstops need to be in ascending order */
         int temp = 0;
         for (int index = 1; index < argc; ++index)
         {
-            int tab_stop = atoi(*(argv + index));
+            int tab_stop = atoi((*argv) + index); /* Get the address of the first array/argument, and then move along by the index to the one you want */
             if (temp < tab_stop)
             {
                 printf("Error: The tab stop arguments are not in ascending order.\n");
                 return -1;
             }
+            tab_stops[index - 1] = tab_stop;
+            temp = tab_stop;
         }
+        /* fill out the rest of the tab_stops with defaults */
+        for (int i = argc; i < MAX_ARGUMENTS; ++i)
+        {
+            tab_stops[i] = TAB_SIZE;
+        }
+    }
+    if (argc <= 2)
+    {
+        /* Build the tab_stops */
     }
     return 0;
 }
