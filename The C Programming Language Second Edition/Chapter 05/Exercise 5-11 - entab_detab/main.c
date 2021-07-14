@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
         int temp = 0;
         for (int index = 1; index < argc; ++index)
         {
-            int tab_stop = atoi((*argv) + index); /* Get the address of the first array/argument, and then move along by the index to the one you want */
+            int tab_stop = atoi(*(argv + index)); /* Dereference the 1D array to convert its contents from char* to int */
             if (temp < tab_stop)
             {
                 printf("Error: The tab stop arguments are not in ascending order.\n");
