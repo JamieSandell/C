@@ -28,17 +28,20 @@ int main(int argc, char *argv[])
     {
         /* the first argument is the name of the exe, so >= 2 means user arguments have been passed in */
         /* validate the input, the tabstops need to be in ascending order */
-        int temp = 0;
-        for (int index = 1; index < argc; ++index)
-        {
-            int tab_stop = atoi(*(argv + index)); /* Dereference the 1D array to convert its contents from char* to int */
-            if (temp < tab_stop)
+        int index = 1;
+        int tab_stop = atoi(*(argv + index));
+        int temp = tab_stop;
+        while (index < argc)
+        {            
+            if (temp > tab_stop)
             {
                 printf("Error: The tab stop arguments are not in ascending order.\n");
                 return -1;
             }
             tab_stops[index - 1] = tab_stop;
             temp = tab_stop;
+            index++;
+            tab_stop = atoi(*(argv + index)); /* Dereference the 1D array to convert its contents from char* to int */
         }
         /* fill out the rest of the tab_stops with defaults */
         for (int i = argc; i < MAX_ARGUMENTS; ++i)
