@@ -24,32 +24,32 @@ int main(int argc, char *argv[])
         printf("Error: MAX_ARGUMENTS (%i) exceeded. Number of arguments passed in: %i\n", MAX_ARGUMENTS, argc);
         return -1;
     }
-    if (argc >= 2)
-    {
-        /* the first argument is the name of the exe, so >= 2 means user arguments have been passed in */
-        /* validate the input, the tabstops need to be in ascending order */
+    if (argc >= 2) /* the first argument is the name of the exe, so >= 2 means user arguments have been passed in */
+    {        
+        /* stores the tabstops passed in as arguments and validate the input as we go, the tabstops need to be in ascending order */
         int index = 1;
-        int tab_stop = atoi(*(argv + index));
-        int temp = tab_stop;
+        int tab_stop = -1;
+        int prev_tab_stop = -1;
         while (index < argc)
-        {            
-            if (temp > tab_stop)
+        {    
+            prev_tab_stop = tab_stop;
+            tab_stop = atoi(*(argv + index)); /* Dereference the 1D array to convert its contents from char* to int */        
+            if (prev_tab_stop > tab_stop)
             {
                 printf("Error: The tab stop arguments are not in ascending order.\n");
                 return -1;
             }
             tab_stops[index - 1] = tab_stop;
-            temp = tab_stop;
-            index++;
-            tab_stop = atoi(*(argv + index)); /* Dereference the 1D array to convert its contents from char* to int */
+            
+            index++;            
         }
-        /* fill out the rest of the tab_stops with defaults */
-        for (int i = argc; i < MAX_ARGUMENTS; ++i)
+        /* fill out the rest of the tab_stops array with defaults */
+        for (int i = argc - 1; i < MAX_ARGUMENTS; ++i)
         {
             tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
         }
     }
-    if (argc <= 2)
+    if (argc <= 2) /* No arguments passed in */
     {
         /* Build the tab_stops */
         tab_stops[0] = TAB_SIZE;
@@ -59,6 +59,11 @@ int main(int argc, char *argv[])
         }
     }
     return 0;
+
+    /*TODO: Get input
+            detab it
+            Get input
+            entab it*/
 }
 
 /* detab
