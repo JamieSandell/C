@@ -196,6 +196,8 @@ int get_tabs(char line[], int line_length)
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_stops[])
 {
     int destination_index = 0;
+    int tab_size;
+    int tab_stop_index = 0;
     //Copy the source to the destination, exchanging tabs with the relevant number of spaces
     for (int i = 0; i < source_length; ++i)
     {
@@ -203,16 +205,22 @@ void detab(char source[], int source_length, char destination[], int destination
         {
             if (destination_index >= destination_length - 1) /* would the dest_index be overwritten by the null terminating character, or go out of bounds? */
             {
-                printf("Error: detab tried to go out of bounds of the destination index.\n");
+                printf("Error: detab tried to go out of bounds of the destination index when processing the %ith element of source[].\n", i);
                 return;
             }
+            destination[destination_index++] = source[i];
+        }
+        else /* Process the tab character */
+        {
+            tab_size = tab_stops[tab_stop_index++];
+            
         }
     }
     destination[destination_length - 1] = '\0'; //null terminate the destination
 }
 
 /* For entab: Calculates the destination size based on the source for replacing spaces with the right amount of tabs
-Returns the size including room for the null terminating character*/
+Returns the size including room for the null terminating character */
 int calculate_destination_size(char source[], int source_length, int tab_size)
 {
     int destination_size = 0;
