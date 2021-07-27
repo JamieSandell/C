@@ -13,7 +13,7 @@ int calculate_destination_length(char line[], int line_length, int tab_stops[]);
 int calculate_destination_size(char source[], int source_length, int tab_size);
 int get_line(char line[], int max_line_length);
 int get_tabs(char line[], int line_length);
-void detab(char source[], int source_length, char destination[], int destination_length, int tab_size);
+void detab(char source[], int source_length, char destination[], int destination_length, int tab_stops[]);
 
 int main(int argc, char *argv[])
 {
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     }
     if (argc >= 2) /* the first argument is the name of the exe, so >= 2 means user arguments have been passed in */
     {        
-        /* stores the tabstops passed in as arguments and validate the input as we go, the tabstops need to be in ascending order */
+        /* stores the tabstops passed in as arguments and validate the input as we go */
         int index = 1;
         int tab_stop = -1;
         int prev_tab_stop = -1;
@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
             tab_stop = atoi(*(argv + index)); /* Dereference the 1D array to convert its contents from char* to int */        
             if (prev_tab_stop > tab_stop)
             {
+                /* the tabstops passed in to the command line need to be in ascending order */
                 printf("Error: The tab stop arguments are not in ascending order.\n");
                 return -1;
             }
@@ -57,13 +58,17 @@ int main(int argc, char *argv[])
         {
             tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
         }
-    }
-    return 0;
+    }    
 
     /*TODO: Get input
             detab it
             Get input
             entab it*/
+    char input[MAX_LINE_LENGTH + 1];
+    get_line(input, MAX_LINE_LENGTH);
+    printf("%s\n", input);
+
+    return 0;
 }
 
 /* detab
@@ -188,34 +193,20 @@ int get_tabs(char line[], int line_length)
 }
 
 //source and destination lengths should include the null terminating character
-void detab(char source[], int source_length, char destination[], int destination_length, int tab_size)
+void detab(char source[], int source_length, char destination[], int destination_length, int tab_stops[])
 {
-    //Copy the source to the destination, exchanging tabs with the relevant number of spaces
-    int characters_since_last_tab = 0;
     int destination_index = 0;
+    //Copy the source to the destination, exchanging tabs with the relevant number of spaces
     for (int i = 0; i < source_length; ++i)
     {
-        if (source[i] == '\t')
+        if (source[i] != '\t') /* Process non-tab characters. */
         {
-            //Tab character found so copy the right amount of spaces to the destination
-            for (int j = 0; j < (tab_size - characters_since_last_tab); ++j)
+            if (destination_index >= destination_length - 1) /* would the dest_index be overwritten by the null terminating character, or go out of bounds? */
             {
-                destination[destination_index] = ' ';
-                ++destination_index;
+                printf("Error: detab tried to go out of bounds of the destination index.\n");
+                return;
             }
-            characters_since_last_tab = 0; //Reset the counter            
         }
-        else
-        {
-            /*As long as the counter doesn't exceed the tab size we can easily work out how many
-            spaces to swap a tab for when we hit a tab character*/        
-            if (characters_since_last_tab <= tab_size)
-            {
-                ++characters_since_last_tab;
-            }
-            destination[destination_index] = source[i];
-            ++destination_index;
-        }        
     }
     destination[destination_length - 1] = '\0'; //null terminate the destination
 }
