@@ -125,7 +125,7 @@ int calculate_destination_length(char line[], int line_length, int tab_stops[])
     int characters_since_last_tab = 0;
     int destination_size = 0;
     int tab_stop_index = 0;
-    int tab_stop_difference;
+    int tab_stop_difference, prev_tab_size;
     for (int i = 0; i < line_length; ++i)
     {
         if (line[i] == '\t')
@@ -134,19 +134,22 @@ int calculate_destination_length(char line[], int line_length, int tab_stops[])
             calculating the correct "width" from the last character to the current tab */
             if (tab_stop_index == 0)
             {
-                destination_size += tab_stops[tab_stop_index++] - characters_since_last_tab;
+                destination_size += tab_stops[tab_stop_index] - characters_since_last_tab;
+                prev_tab_size = tab_stops[tab_stop_index++];
             }
             else
             {
-                tab_stop_difference = tab_stops[tab_stop_index] - tab_stops[tab_stop_index - 1] - characters_since_last_tab;
+                tab_stop_difference = tab_stops[tab_stop_index] - prev_tab_size - characters_since_last_tab;
                 if (tab_stop_difference < 1)
                 {
                     destination_size += 1; /* it's possible for the input to have gone past the current tab_stop, in this case replace with 1
                                                 (size of a space character) */
+                    prev_tab_size = 1;
                 }
                 else
                 {
                     destination_size += tab_stop_difference;
+                    prev_tab_size = tab_stops[tab_stop_index];
                 }
             }            
             characters_since_last_tab = 0; //Reset the counter       
