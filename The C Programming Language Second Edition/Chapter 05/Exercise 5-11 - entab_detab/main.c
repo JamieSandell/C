@@ -64,8 +64,10 @@ int main(int argc, char *argv[])
             detab it
             Get input
             entab it*/
+    
     char input[MAX_LINE_LENGTH + 1];
-    get_line(input, MAX_LINE_LENGTH);
+    int line_length = get_line(input, MAX_LINE_LENGTH);
+    calculate_destination_length(input, line_length, tab_stops);
     printf("%s\n", input);
 
     return 0;
@@ -123,28 +125,45 @@ int calculate_destination_length(char line[], int line_length, int tab_stops[])
     int characters_since_last_tab = 0;
     int destination_size = 0;
     int tab_stop_index = 0;
+    int tab_stop_difference;
     for (int i = 0; i < line_length; ++i)
     {
         if (line[i] == '\t')
         {
-            /*increase the destination_size by the right amount of spaces by
-            calculating the correct "width" from the last character to the current tab*/
-            destination_size += tab_stops[tab_stop_index++] - characters_since_last_tab;
+            /* increase the destination_size by the right amount of spaces by
+            calculating the correct "width" from the last character to the current tab */
+            if (tab_stop_index == 0)
+            {
+                destination_size += tab_stops[tab_stop_index++] - characters_since_last_tab;
+            }
+            else
+            {
+                tab_stop_difference = tab_stops[tab_stop_index] - tab_stops[tab_stop_index - 1] - characters_since_last_tab;
+                if (tab_stop_difference < 1)
+                {
+                    destination_size += 1; /* it's possible for the input to have gone past the current tab_stop, in this case replace with 1
+                                                (size of a space character) */
+                }
+                else
+                {
+                    destination_size += tab_stop_difference;
+                }
+            }            
             characters_since_last_tab = 0; //Reset the counter       
         }
         else
         {
-            /*As long as the counter doesn't exceed the tab size we can easily work out how many
-            spaces to swap a tab for when we hit a tab character*/        
+            /* As long as the counter doesn't exceed the tab size we can easily work out how many
+            spaces to swap a tab for when we hit a tab character */        
             if (characters_since_last_tab <= tab_stops[tab_stop_index])
             {
                 ++characters_since_last_tab;
             }
-            ++destination_size; //not a tab so increase by 1 (i.e. we just processed a character from the line[] input)
+            ++destination_size; /* not a tab so increase by 1 (i.e. we just processed a character from the line[] input) */
         }        
     }
 
-    ++destination_size; //allow space for the null terminating character
+    ++destination_size; /* allow space for the null terminating character */
     return destination_size;
 }
 
@@ -205,7 +224,7 @@ void detab(char source[], int source_length, char destination[], int destination
         {
             if (destination_index >= destination_length - 1) /* would the dest_index be overwritten by the null terminating character, or go out of bounds? */
             {
-                printf("Error: detab tried to go out of bounds of the destination index when processing the %ith element of source[].\n", i);
+                printf("Error: detab tried to go out of bounds of the destination[] when processing the %ith element of source[].\n", i);
                 return;
             }
             destination[destination_index++] = source[i];
@@ -213,7 +232,15 @@ void detab(char source[], int source_length, char destination[], int destination
         else /* Process the tab character */
         {
             tab_size = tab_stops[tab_stop_index++];
-            
+            if (destination_index + tab_size >= destination_length - 1) /* would the dest_index + tab detabbed go out of bounds or overwrite null terminator? */
+            {
+                printf("Error: detab tried to go out of bounds of destination[] when processing a tab.\n");
+                return;
+            }
+            for (int i = destination_index; i < tab_size; ++i)
+            {
+                destination[i] = ' ';
+            }
         }
     }
     destination[destination_length - 1] = '\0'; //null terminate the destination
