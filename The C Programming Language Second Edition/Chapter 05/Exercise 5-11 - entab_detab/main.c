@@ -66,9 +66,11 @@ int main(int argc, char *argv[])
             entab it*/
     
     char input[MAX_LINE_LENGTH + 1];
-    int line_length = get_line(input, MAX_LINE_LENGTH);
-    calculate_destination_length(input, line_length, tab_stops);
-    printf("%s\n", input);
+    int input_length = get_line(input, MAX_LINE_LENGTH);
+    int destination_length = calculate_destination_length(input, input_length, tab_stops);
+    char destination[destination_length];
+    detab(input, input_length, destination, destination_length, tab_stops);
+    printf("%s\n", destination);
 
     return 0;
 }
@@ -134,7 +136,7 @@ int calculate_destination_length(char line[], int line_length, int tab_stops[])
             calculating the correct "width" from the last character to the current tab */
             if (tab_stop_index == 0)
             {
-                destination_size += tab_stops[tab_stop_index] - characters_since_last_tab;
+                destination_size += tab_stops[tab_stop_index] - characters_since_last_tab - 1;
                 prev_tab_size = tab_stops[tab_stop_index++];
             }
             else
@@ -218,7 +220,7 @@ int get_tabs(char line[], int line_length)
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_stops[])
 {
     int destination_index = 0;
-    int tab_size;
+    int spaces_to_write;
     int tab_stop_index = 0;
     //Copy the source to the destination, exchanging tabs with the relevant number of spaces
     for (int i = 0; i < source_length; ++i)
@@ -234,15 +236,21 @@ void detab(char source[], int source_length, char destination[], int destination
         }
         else /* Process the tab character */
         {
-            tab_size = tab_stops[tab_stop_index++];
-            if (destination_index + tab_size >= destination_length - 1) /* would the dest_index + tab detabbed go out of bounds or overwrite null terminator? */
+            spaces_to_write = tab_stops[tab_stop_index++] - 1;
+            if (spaces_to_write <= destination_index)
+            {
+                /* the current tab_stops[i] was <= destination_index, this means we should set it so it writes out one ' ' char to destination[]. */
+                spaces_to_write = destination_index + 1;
+            }
+            if (spaces_to_write - destination_index > destination_length - destination_index - 1) /* would the dest_index + tab detabbed go out of bounds
+                                                                                                or overwrite null terminator? */
             {
                 printf("Error: detab tried to go out of bounds of destination[] when processing a tab.\n");
                 return;
-            }
-            for (int i = destination_index; i < tab_size; ++i)
+            }            
+            for (; destination_index < spaces_to_write; ++destination_index)
             {
-                destination[i] = ' ';
+                destination[destination_index] = ' ';
             }
         }
     }
