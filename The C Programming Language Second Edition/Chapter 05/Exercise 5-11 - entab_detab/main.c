@@ -10,7 +10,7 @@ if there are no arguments. */
 #define MAX_LINE_LENGTH 1000
 
 int calculate_destination_length(char line[], int line_length, int tab_stops[]);
-int calculate_destination_size(char source[], int source_length, int tab_size);
+int calculate_destination_size(char source[], int source_length, int tab_stops[]);
 int get_line(char line[], int max_line_length);
 int get_tabs(char line[], int line_length);
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_stops[]);
@@ -33,18 +33,27 @@ int main(int argc, char *argv[])
         while (index < argc)
         {    
             prev_tab_stop = tab_stop;
-            tab_stop = atoi(*(argv + index)); /* Dereference the 1D array to convert its contents from char* to int */        
+            tab_stop = atoi(*(argv + index)); /* argv contains the command line arguments and it is a pointer to pointer of type char.
+            argv points to the memory address of the first pointer to char, argv + 1 points to the memory address of the
+            next pointer to char.
+            This is what we want as first pointer contains the first argument, but technically the first argument is the full path to the exe.
+            e.g. argv = memory address 1000
+            if you dereference argv you'll get a 1D array of characters e.g. c:\test.exe
+            1000    1001    1002    1003    1004    1005    1006    1007    1008    1009    1010
+            c       :       \       t       e       s       t       .       e       x       e
+            We dereference this memory address of the second pointer to convert its 1D array of characters from char* to int 
+            1011    1012
+            3       2       assuming 32 was passed as an argument on the command line and then we just keep going until we've read all of the args */    
+
             if (prev_tab_stop > tab_stop)
             {
-                /* the tabstops passed in to the command line need to be in ascending order */
                 printf("Error: The tab stop arguments are not in ascending order.\n");
                 return -1;
             }
-            tab_stops[index - 1] = tab_stop;
-            
+            tab_stops[index - 1] = tab_stop;            
             index++;            
         }
-        /* fill out the rest of the tab_stops array with defaults */
+        /* fill out the rest of the tab_stops array with the default tab size */
         for (int i = argc - 1; i < MAX_ARGUMENTS; ++i)
         {
             tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
@@ -52,7 +61,7 @@ int main(int argc, char *argv[])
     }
     if (argc <= 2) /* No arguments passed in */
     {
-        /* Build the tab_stops */
+        /* Build the tab_stops with the default tab size */
         tab_stops[0] = TAB_SIZE;
         for (int i = 1; i < MAX_ARGUMENTS; ++i)
         {
@@ -60,41 +69,22 @@ int main(int argc, char *argv[])
         }
     }    
 
-    /*TODO: Get input
-            detab it
-            Get input
-            entab it*/
-    
-    char input[MAX_LINE_LENGTH + 1];
-    int input_length = get_line(input, MAX_LINE_LENGTH);
-    int destination_length = calculate_destination_length(input, input_length, tab_stops);
-    char destination[destination_length];
-    detab(input, input_length, destination, destination_length, tab_stops);
-    printf("%s\n", destination);
+    /* detab */
+    char detab_input[MAX_LINE_LENGTH + 1];
+    int detab_input_length = get_line(detab_input, MAX_LINE_LENGTH);
+    int detab_destination_length = calculate_destination_length(detab_input, detab_input_length, tab_stops);
+    char detab_destination[detab_destination_length];
+    detab(detab_input, detab_input_length, detab_destination, detab_destination_length, tab_stops);
+    printf("%s\n", detab_destination);
+
+    /* entab */
+    char entab_input[MAX_LINE_LENGTH + 1];
+    int entab_input_length = get_line(entab_input, MAX_LINE_LENGTH);
+    int entab_destination_length = calculate_destination_size(entab_input, entab_input_length, tab_stops);
+    char entab_destination[entab_destination_length];
 
     return 0;
 }
-
-/* detab
-int main()
-{
-    char line[(MAX_LINE_LENGTH + 1)]; //allow for the termination character
-    int line_length = 0;
-    int number_of_tabs = 0;
-    while ((line_length = get_line(line, MAX_LINE_LENGTH)) > 0)
-    {
-        printf("%s\n", line);
-
-        number_of_tabs = get_tabs(line, line_length);
-        printf("Number of tabs: %i\n", number_of_tabs);
-
-        int destination_length = calculate_destination_length(line, line_length, TAB_SIZE);
-        char destination[destination_length];
-        detab(line, line_length, destination, destination_length, TAB_SIZE);
-        printf("With tabs:\t%s\n", line);
-        printf("Without tabs:\t%s\n", destination);
-    }
-} */
 
 /* entab
 int main()
@@ -136,7 +126,7 @@ int calculate_destination_length(char line[], int line_length, int tab_stops[])
             calculating the correct "width" from the last character to the current tab */
             if (tab_stop_index == 0)
             {
-                destination_size += tab_stops[tab_stop_index] - characters_since_last_tab - 1;
+                destination_size += tab_stops[tab_stop_index] - characters_since_last_tab;
                 prev_tab_size = tab_stops[tab_stop_index++];
             }
             else
@@ -216,7 +206,7 @@ int get_tabs(char line[], int line_length)
     return number_of_tabs;
 }
 
-//source and destination lengths should include the null terminating character
+/* source and destination lengths should include the null terminating character */
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_stops[])
 {
     int destination_index = 0;
@@ -236,7 +226,7 @@ void detab(char source[], int source_length, char destination[], int destination
         }
         else /* Process the tab character */
         {
-            spaces_to_write = tab_stops[tab_stop_index++] - 1;
+            spaces_to_write = tab_stops[tab_stop_index++];
             if (spaces_to_write <= destination_index)
             {
                 /* the current tab_stops[i] was <= destination_index, this means we should set it so it writes out one ' ' char to destination[]. */
@@ -259,11 +249,12 @@ void detab(char source[], int source_length, char destination[], int destination
 
 /* For entab: Calculates the destination size based on the source for replacing spaces with the right amount of tabs
 Returns the size including room for the null terminating character */
-int calculate_destination_size(char source[], int source_length, int tab_size)
+int calculate_destination_size(char source[], int source_length, int tab_stops[])
 {
     int destination_size = 0;
     int consecutive_blanks = 0;
     int character_count = 0;
+    int tab_stops_index = 0;
 
     for (int i = 0; i < source_length; ++i)
     {
@@ -271,10 +262,13 @@ int calculate_destination_size(char source[], int source_length, int tab_size)
         if (source[i] == ' ')
         {
             ++consecutive_blanks;
-            if (character_count == tab_size && consecutive_blanks > 1)
+            if (character_count == tab_stops[tab_stops_index] && consecutive_blanks > 1)
             {
-                ++destination_size; //at the width of a tab and consecutive_blanks > 1 so here we would replace those spaces with a single tab character
-                //reset for the next block of 8 characters
+                /* At the width of a tab and consecutive_blanks > 1 so here we would replace those spaces with x tab characters,
+                and then reset for the next block of x characters that are equal to the next tab_stop */
+                destination_size += tab_stops[tab_stops_index] / TAB_SIZE;
+                /* ++destination_size; */
+                tab_stops_index++;
                 character_count = 0;
                 consecutive_blanks = 0;
             }
@@ -283,18 +277,18 @@ int calculate_destination_size(char source[], int source_length, int tab_size)
         {
             if (consecutive_blanks > 0)
             {
-                //we have hit a non-blank character and previously had blank characters
-                destination_size += consecutive_blanks + 1; //the previous consecutive_blanks + 1 for the current character
+                /* we have hit a non-blank character and previously had blank characters */
+                destination_size += consecutive_blanks + 1; /* the previous consecutive_blanks + 1 for the current character */
             }
             else
             {
-                //we have hit a non-blank character and did not previously have blank characters
+                /* we have hit a non-blank character and did not previously have blank characters */
                 ++destination_size;
             }                        
             consecutive_blanks = 0;            
         }      
     }
-    ++destination_size; //for the null terminating character
+    ++destination_size; /* for the null terminating character */
 
     return destination_size;
 }
