@@ -12,10 +12,11 @@ if there are no arguments. */
 int calculate_destination_length(char line[], int line_length, int tab_stops[]);
 int calculate_destination_size(char source[], int source_length, int tab_stops[]);
 int get_line(char line[], int max_line_length);
-int get_tabs(char line[], int line_length);
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_stops[]);
+void entab(char source[], int source_length, char destination[], int destination_length, int tab_stops[]);
 
-int main(int argc, char *argv[])
+/* Arguments from the command line should be multiples of TAB_SIZE */
+int main(int argc, char **argv)
 {
     int tab_stops[MAX_ARGUMENTS];
 
@@ -36,14 +37,14 @@ int main(int argc, char *argv[])
             tab_stop = atoi(*(argv + index)); /* argv contains the command line arguments and it is a pointer to pointer of type char.
             argv points to the memory address of the first pointer to char, argv + 1 points to the memory address of the
             next pointer to char.
-            This is what we want as first pointer contains the first argument, but technically the first argument is the full path to the exe.
+            We want this second pointer to char as the first pointer contains the first argument, but technically the first argument is the full path to the exe.
             e.g. argv = memory address 1000
             if you dereference argv you'll get a 1D array of characters e.g. c:\test.exe
             1000    1001    1002    1003    1004    1005    1006    1007    1008    1009    1010
             c       :       \       t       e       s       t       .       e       x       e
             We dereference this memory address of the second pointer to convert its 1D array of characters from char* to int 
             1011    1012
-            3       2       assuming 32 was passed as an argument on the command line and then we just keep going until we've read all of the args */    
+            3       2       assuming 32 was passed as an argument on the command line and then we loop round until we've read all of the args */    
 
             if (prev_tab_stop > tab_stop)
             {
@@ -51,7 +52,7 @@ int main(int argc, char *argv[])
                 return -1;
             }
             tab_stops[index - 1] = tab_stop;            
-            index++;            
+            ++index;            
         }
         /* fill out the rest of the tab_stops array with the default tab size */
         for (int i = argc - 1; i < MAX_ARGUMENTS; ++i)
@@ -82,33 +83,11 @@ int main(int argc, char *argv[])
     int entab_input_length = get_line(entab_input, MAX_LINE_LENGTH);
     int entab_destination_length = calculate_destination_size(entab_input, entab_input_length, tab_stops);
     char entab_destination[entab_destination_length];
+    entab(entab_input, entab_input_length, entab_destination, entab_destination_length, tab_stops);
+    printf("%s\n", entab_destination);
 
     return 0;
 }
-
-/* entab
-int main()
-{
-    char line[MAX_LINE_LENGTH + 1];
-    int line_length;
-
-    while ((line_length = get_line(line, MAX_LINE_LENGTH)) > 0)
-    {
-        printf("%s\n", line);
-        printf("Source array size: %i\n", line_length + 1);
-        int destination_size = calculate_destination_size(line, line_length, TAB_SIZE);
-        printf("Destination array size: %i\n", destination_size);
-        printf("Note: The arrays have room for the null terminating character\n");
-        char entabbed[destination_size];
-        entab(line, line_length, entabbed, destination_size, TAB_SIZE);
-        printf("Before entabbing:\n");
-        printf("%s\n", line);
-        printf("After entabbing:\n");
-        printf("%s\n", entabbed);
-    }
-
-    return 0;
-}*/
 
 /* For detab: Work out the destination array size for detabbing (replacing tabs with spaces)
     Includes space for the null terminating character in its calculation */
@@ -191,21 +170,6 @@ int get_line(char line[], int max_line_length)
     return line_length;
 }
 
-int get_tabs(char line[], int line_length)
-{
-    int number_of_tabs = 0;
-
-    for (int i = 0; i < line_length; ++i)
-    {
-        if (line[i] == '\t')
-        {
-            ++number_of_tabs;
-        }
-    }
-
-    return number_of_tabs;
-}
-
 /* source and destination lengths should include the null terminating character */
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_stops[])
 {
@@ -266,10 +230,15 @@ int calculate_destination_size(char source[], int source_length, int tab_stops[]
             {
                 /* At the width of a tab and consecutive_blanks > 1 so here we would replace those spaces with x tab characters,
                 and then reset for the next block of x characters that are equal to the next tab_stop */
-                destination_size += tab_stops[tab_stops_index] / TAB_SIZE;
-                /* ++destination_size; */
+                if (tab_stops_index == 0)
+                {
+                    destination_size += tab_stops[tab_stops_index] / TAB_SIZE;
+                }
+                else
+                {
+                    destination_size += (tab_stops[tab_stops_index] - tab_stops[tab_stops_index - 1]) / TAB_SIZE;
+                }                
                 tab_stops_index++;
-                character_count = 0;
                 consecutive_blanks = 0;
             }
         }        
@@ -293,11 +262,13 @@ int calculate_destination_size(char source[], int source_length, int tab_stops[]
     return destination_size;
 }
 
-void entab(char source[], int source_length, char destination[], int destination_length, int tab_size)
+void entab(char source[], int source_length, char destination[], int destination_length, int tab_stops[])
 {
     int destination_index = 0;
     int consecutive_blanks = 0;
     int character_count = 0;
+    int tab_stops_index = 0;
+    int number_of_tabs_to_insert;
 
     for (int i = 0; i < source_length; ++i)
     {
@@ -305,12 +276,23 @@ void entab(char source[], int source_length, char destination[], int destination
         if (source[i] == ' ')
         {
             ++consecutive_blanks;
-            if (character_count == tab_size && consecutive_blanks > 1)
+            if (character_count == tab_stops[tab_stops_index] && consecutive_blanks > 1)
             {
-                destination[destination_index] = '\t';
-                ++destination_index; //at the width of a tab and consecutive_blanks > 1 so here we would replace those spaces with a single tab character
-                //reset for the next block of 8 characters
-                character_count = 0;
+                /* At the width of a tab and consecutive_blanks > 1 so here we would replace those spaces with x tab characters,
+                and then reset for the next block of x characters that are equal to the next tab_stop */
+                if (tab_stops_index == 0)
+                {
+                    number_of_tabs_to_insert = tab_stops[tab_stops_index] / TAB_SIZE;   
+                }
+                else
+                {
+                    number_of_tabs_to_insert = (tab_stops[tab_stops_index] - tab_stops[tab_stops_index - 1]) / TAB_SIZE;
+                }                 
+                for (int i = 0; i < number_of_tabs_to_insert; ++i)
+                {
+                    destination[destination_index++] = '\t';
+                }
+                ++tab_stops_index;
                 consecutive_blanks = 0;
             }
         }        
