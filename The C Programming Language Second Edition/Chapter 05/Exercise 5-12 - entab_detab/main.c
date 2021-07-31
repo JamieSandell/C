@@ -19,6 +19,9 @@ void entab(char source[], int source_length, char destination[], int destination
 int main(int argc, char **argv)
 {
     int tab_stops[MAX_ARGUMENTS];
+    int m; /* tab stop starting at m (chars wide) */
+    int n; /* tab stop every n columns */
+    int m_and_n_passed_in = 0;
 
     if (argc > MAX_ARGUMENTS)
     {
@@ -30,40 +33,75 @@ int main(int argc, char **argv)
         /* First check if only two arguments passed in on the command line to then check for -m +n */
         if (argc == 3)
         {
-            
-        }
-        /* stores the tabstops passed in as arguments and validate the input as we go */
-        int index = 1;
-        int tab_stop = -1;
-        int prev_tab_stop = -1;
-        while (index < argc)
-        {    
-            prev_tab_stop = tab_stop;
-            tab_stop = atoi(*(argv + index)); /* argv contains the command line arguments and it is a pointer to pointer of type char.
-            argv points to the memory address of the first pointer to char, argv + 1 points to the memory address of the
-            next pointer to char.
-            We want this second pointer to char as the first pointer contains the first argument, but technically the first argument is the full path to the exe.
-            e.g. argv = memory address 1000
-            if you dereference argv you'll get a 1D array of characters e.g. c:\test.exe
-            1000    1001    1002    1003    1004    1005    1006    1007    1008    1009    1010
-            c       :       \       t       e       s       t       .       e       x       e
-            We dereference this memory address of the second pointer to convert its 1D array of characters from char* to int 
-            1011    1012
-            3       2       assuming 32 was passed as an argument on the command line and then we loop round until we've read all of the args */    
-
-            if (prev_tab_stop > tab_stop)
+            if ((*argv + 1)[0] == '-')
             {
-                printf("Error: The tab stop arguments are not in ascending order.\n");
-                return -1;
+                m = atoi(*(argv + 1));
+                if (m == 0)
+                {
+                    printf("Error: m column argument not parsed or was 0: %s\n", *(argv + 1));
+                    return -1;
+                }
+                if ((*argv + 2)[0] == '+')
+                {
+                    n = atoi(*(argv + 2));
+                    if (n == 0)
+                    {
+                        printf("Error: n column argument not parsed or was 0: %s\n", *(argv + 2));
+                        return -1;
+                    }
+                }
+                else
+                {
+                    printf("Error: n column argument incorrect: %s\n", *(argv + 2));
+                    return -1;
+                }
+                m_and_n_passed_in = 1;
             }
-            tab_stops[index - 1] = tab_stop;            
-            ++index;            
         }
-        /* fill out the rest of the tab_stops array with the default tab size */
-        for (int i = argc - 1; i < MAX_ARGUMENTS; ++i)
+        if (m_and_n_passed_in)
         {
-            tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
+            tab_stops[0] = m;
+            for (int i = 1; i < MAX_ARGUMENTS; ++i)
+            {
+                tab_stops[i] = tab_stops[i - 1] + n;
+            }
         }
+        else
+        {
+            /* stores the tabstops passed in as arguments and validate the input as we go */
+            int index = 1;
+            int tab_stop = -1;
+            int prev_tab_stop = -1;
+            while (index < argc)
+            {    
+                prev_tab_stop = tab_stop;
+                tab_stop = atoi(*(argv + index)); /* argv contains the command line arguments and it is a pointer to pointer of type char.
+                argv points to the memory address of the first pointer to char, argv + 1 points to the memory address of the
+                next pointer to char.
+                We want this second pointer to char as the first pointer contains the first argument, but technically the first argument is the full path to the exe.
+                e.g. argv = memory address 1000
+                if you dereference argv you'll get a 1D array of characters e.g. c:\test.exe
+                1000    1001    1002    1003    1004    1005    1006    1007    1008    1009    1010
+                c       :       \       t       e       s       t       .       e       x       e
+                We dereference this memory address of the second pointer to convert its 1D array of characters from char* to int 
+                1011    1012
+                3       2       assuming 32 was passed as an argument on the command line and then we loop round until we've read all of the args */    
+
+                if (prev_tab_stop > tab_stop)
+                {
+                    printf("Error: The tab stop arguments are not in ascending order.\n");
+                    return -1;
+                }
+                tab_stops[index - 1] = tab_stop;            
+                ++index;            
+            }
+            /* fill out the rest of the tab_stops array with the default tab size */
+            for (int i = argc - 1; i < MAX_ARGUMENTS; ++i)
+            {
+                tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
+            }
+        }
+        
     }
     if (argc <= 2) /* No arguments passed in */
     {
