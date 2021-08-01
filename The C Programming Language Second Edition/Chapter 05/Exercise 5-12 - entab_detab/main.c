@@ -11,6 +11,7 @@
 
 int calculate_destination_length(char line[], int line_length, int tab_stops[]);
 int calculate_destination_size(char source[], int source_length, int tab_stops[]);
+void fill_tab_stops(int tab_stops[], int start_index, int end_index);
 int get_line(char line[], int max_line_length);
 void detab(char source[], int source_length, char destination[], int destination_length, int tab_stops[]);
 void entab(char source[], int source_length, char destination[], int destination_length, int tab_stops[]);
@@ -33,15 +34,16 @@ int main(int argc, char **argv)
         /* First check if only two arguments passed in on the command line to then check for -m +n */
         if (argc == 3)
         {
-            if ((*argv + 1)[0] == '-')
+            if (*(argv + 1)[0] == '-') /* starting column passed in */
             {
                 m = atoi(*(argv + 1));
+                m *= -1; /* drop the '-' */
                 if (m == 0)
                 {
                     printf("Error: m column argument not parsed or was 0: %s\n", *(argv + 1));
                     return -1;
                 }
-                if ((*argv + 2)[0] == '+')
+                if (*(argv + 2)[0] == '+') /* repeating columns passed in */
                 {
                     n = atoi(*(argv + 2));
                     if (n == 0)
@@ -96,10 +98,7 @@ int main(int argc, char **argv)
                 ++index;            
             }
             /* fill out the rest of the tab_stops array with the default tab size */
-            for (int i = argc - 1; i < MAX_ARGUMENTS; ++i)
-            {
-                tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
-            }
+            fill_tab_stops(tab_stops, argc - 1, MAX_ARGUMENTS);
         }
         
     }
@@ -107,10 +106,7 @@ int main(int argc, char **argv)
     {
         /* Build the tab_stops with the default tab size */
         tab_stops[0] = TAB_SIZE;
-        for (int i = 1; i < MAX_ARGUMENTS; ++i)
-        {
-            tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
-        }
+        fill_tab_stops(tab_stops, 1, MAX_ARGUMENTS);
     }    
 
     /* detab */
@@ -211,6 +207,14 @@ int get_line(char line[], int max_line_length)
     }    
 
     return line_length;
+}
+
+void fill_tab_stops(int tab_stops[], int start_index, int end_index)
+{
+    for (int i = start_index; i < end_index; ++i)
+    {
+        tab_stops[i] = tab_stops[i - 1] + TAB_SIZE;
+    } 
 }
 
 /* source and destination lengths should include the null terminating character */
