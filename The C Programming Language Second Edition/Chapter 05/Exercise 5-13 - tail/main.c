@@ -63,6 +63,7 @@ int main(int argc, char **argv)
         }
     }
 
+    char* lines[MAX_LINE_LENGTH * n];
     char input[MAX_LINE_LENGTH];
 
     while(get_line(input, MAX_LINE_LENGTH) > 0) 
