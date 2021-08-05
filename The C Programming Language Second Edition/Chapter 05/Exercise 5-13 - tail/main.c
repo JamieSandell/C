@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     int nlines; /* number of input lines read */
     if ((nlines = read_lines(lineptr, MAX_LINES)) >= 0)
     {
-        write_lines(lineptr, (n > nlines ? n : nlines)); /* write the last n lines, unless lines read was smaller, then write them instead */
+        write_lines(lineptr, (nlines < n ? nlines : n)); /* write the last n lines, unless lines read was smaller, then write them instead */
     }
 
     return 0;
@@ -90,14 +90,19 @@ char *alloc(int n)
     return 0; /* not enough room */
 }
 
-/* max_line_length is inclusive of the null terminator */
+/* max_line_length is treated as inclusive of the null terminator 
+returns the number of characters, excluding the null terminator */
 int get_line(char line[], int max_line_length)
 {
     int char_count = 0;
     int c;
-    while ((c = getchar()) != EOF && c != '\n' && char_count < max_line_length)
+    while ((c = getchar()) != EOF && c != '\n' && char_count < max_line_length - 1)
     {
         line[char_count++] = c;
+    }
+    if (c == '\n')
+    {
+        line[char_count++] = '\n';
     }
     line[char_count] = '\0';
     return char_count;
@@ -122,7 +127,7 @@ int read_lines(char *lineptr[], int max_lines)
         }
         else
         {
-            line[len] = '\0'; /* delete the newline character */
+            line[len - 1] = '\0'; /* delete the newline character */
             strcpy(p, line); /* copy the string of characters from the line array to the address (static buffer) that p points to */
             lineptr[nlines++] = p; /* store the memory address that p points to in to our pointer array */
         }
