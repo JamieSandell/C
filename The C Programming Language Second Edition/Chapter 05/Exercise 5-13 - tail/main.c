@@ -84,7 +84,7 @@ char *alloc(int n)
 {
     if (allocbuf + ALLOC_SIZE - allocp >= n) /* it fits */
     {
-        allocp +=n;
+        allocp += n;
         return allocp - n; /* old p */
     }
     return 0; /* not enough room */
@@ -132,6 +132,8 @@ int read_lines(char *lineptr[], int max_lines)
             lineptr[nlines++] = p; /* store the memory address that p points to in to our pointer array */
         }
     }
+    /* reverse */
+    
     return nlines;
 }
 
@@ -139,6 +141,6 @@ void write_lines(char *lineptr[], int nlines)
 {
     while (nlines-- > 0)
     {
-        printf("%s\n", *lineptr++);
+        printf("%s\n", *lineptr--);
     }
 }
