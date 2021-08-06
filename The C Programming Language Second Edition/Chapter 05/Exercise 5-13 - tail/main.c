@@ -25,6 +25,7 @@ char *alloc(int n);
 int get_line(char line[], int max_line_length);
 void print_usage();
 int read_lines(char *lineptr[], int max_lines);
+void swap(char *v[], int i, int j);
 void write_lines(char *lineptr[], int nlines);
 
 int main(int argc, char **argv)
@@ -64,6 +65,16 @@ int main(int argc, char **argv)
     int nlines; /* number of input lines read */
     if ((nlines = read_lines(lineptr, MAX_LINES)) >= 0)
     {
+        if (nlines > n)
+        {
+            /* Free up excess memory */
+            char *p = *lineptr;
+            int difference = nlines - n;
+            for (int i = nlines; i > nlines; --i)
+            {
+                afree(p += i);
+            }
+        }
         write_lines(lineptr, (nlines < n ? nlines : n)); /* write the last n lines, unless lines read was smaller, then write them instead */
     }
 
@@ -132,9 +143,17 @@ int read_lines(char *lineptr[], int max_lines)
             lineptr[nlines++] = p; /* store the memory address that p points to in to our pointer array */
         }
     }
-    /* reverse */
     
     return nlines;
+}
+
+void swap(char *v[], int i, int j)
+{
+    char *temp;
+
+    temp = v[i];
+    v[i] = v[j];
+    v[j] = temp;
 }
 
 void write_lines(char *lineptr[], int nlines)
