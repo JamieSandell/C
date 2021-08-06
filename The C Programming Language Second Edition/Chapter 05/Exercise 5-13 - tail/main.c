@@ -68,13 +68,17 @@ int main(int argc, char **argv)
         if (nlines > n)
         {
             /* Free up excess memory */
-            char *p = *lineptr;
             int difference = nlines - n;
-            for (int i = nlines; i > nlines; --i)
+            for (int i = 0; i < difference; ++i)
             {
-                afree(p += i);
+                afree(*(lineptr + ((--nlines) - i)));
             }
         }
+        char twelve[] = "twelve";
+        char *p = alloc(7);
+        strcpy(p, twelve); /* copy the string of characters from the line array to the address (static buffer) that p points to */
+        lineptr[nlines++] = p; /* store the memory address that p points to in to our pointer array */
+
         write_lines(lineptr, (nlines < n ? nlines : n)); /* write the last n lines, unless lines read was smaller, then write them instead */
     }
 
@@ -160,6 +164,6 @@ void write_lines(char *lineptr[], int nlines)
 {
     while (nlines-- > 0)
     {
-        printf("%s\n", *lineptr--);
+        printf("%s\n", *lineptr++);
     }
 }
