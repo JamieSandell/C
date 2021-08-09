@@ -26,7 +26,7 @@ int get_line(char line[], int max_line_length);
 void print_usage();
 int read_lines(char *lineptr[], int max_lines);
 void swap(char *v[], int i, int j);
-void write_lines(char *lineptr[], int nlines);
+void write_lines(char *lineptr[], int nlines, int start_pos);
 
 int main(int argc, char **argv)
 {
@@ -65,23 +65,23 @@ int main(int argc, char **argv)
     int nlines; /* number of input lines read */
     if ((nlines = read_lines(lineptr, MAX_LINES)) >= 0) /* Did we actually read anything in? */
     {
-        if (nlines > n) /* Read in more lines than what we specified on the command line/default value? */
+        if (nlines > n)
         {
-            /* Free up excess memory */
-            int difference = nlines - n; /* How many lines were read in over the amount specified to the program? */
-            for (int i = 0; i < difference; ++i)
-            {
-                /* one two three four five six seven eight nine ten eleven
-
-should print
-two three four five six seven eight nine ten elven */
-                afree(*(lineptr + ((--nlines) - i))); /* Free the lines starting with x until n.
-                x being the memory address of the last line and n being the number of lines the program was told to print 
-                e.g. x = the 13th line read in, but n = 10 last lines of input to print */
-            }
+            write_lines(lineptr, n, nlines - n);
         }
+        else
+        {
+            write_lines(lineptr, nlines, 0);
+        }
+    }
 
-        write_lines(lineptr, (nlines < n ? nlines : n)); /* write the last n lines, unless lines read was smaller, then write them instead */
+    /* We don't need to free the memory at the end of the program as it's on the stack and the OS will do that for us. 
+    However as we're simulating a rudimentary memory system we should do just that */
+    char *free_ptr = lineptr;
+    while (nlines-- > 0)
+    {
+
+        afree(*lineptr--);
     }
 
     return 0;
@@ -162,8 +162,9 @@ void swap(char *v[], int i, int j)
     v[j] = temp;
 }
 
-void write_lines(char *lineptr[], int nlines)
+void write_lines(char *lineptr[], int nlines, int start_pos)
 {
+    lineptr += start_pos;
     while (nlines-- > 0)
     {
         printf("%s\n", *lineptr++);
