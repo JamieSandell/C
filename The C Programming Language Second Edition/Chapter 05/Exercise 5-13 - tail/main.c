@@ -76,12 +76,10 @@ int main(int argc, char **argv)
     }
 
     /* We don't need to free the memory at the end of the program as it's on the stack and the OS will do that for us. 
-    However as we're simulating a rudimentary memory system we should do just that */
-    char *free_ptr = lineptr;
+    However as we're simulating a rudimentary memory system we should do just that (FIFO) */
     while (nlines-- > 0)
     {
-
-        afree(*lineptr--);
+        afree(*(lineptr + nlines));
     }
 
     return 0;
