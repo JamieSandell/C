@@ -12,6 +12,10 @@ int get_line(char line[]);
 int read_lines(char *line_pointer[], int number_of_lines);
 void write_lines(char *line_pointer[], int number_of_lines);
 
+int reverse_compare(void *a, void *b);
+int(*base_compare)(void *, void *);
+int(*compare)(void *, void*);
+
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void *));
 int numcmp(const char *s1, const char *s2);
 void swap(void *v[], int i, int j);
@@ -51,8 +55,9 @@ int main(int argc, char *argv[])
 
     if ((lines_read = read_lines(line_pointer, MAX_LINES)) >= 0)
     {
-        int (*comparison_function)(void *, void *) = (int (*)(void *, void*))(numeric ? numcmp : strcmp);
-        my_qsort((void **)line_pointer, 0, lines_read - 1, comparison_function);
+        base_compare = (int (*)(void *, void*))(numeric ? numcmp : strcmp);
+        compare = (int (*)(void *, void *))(reverse ? reverse_compare : base_compare);
+        my_qsort((void **)line_pointer, 0, lines_read - 1, compare);
         write_lines(line_pointer, lines_read);
         return 0;
     }
@@ -102,6 +107,11 @@ void write_lines(char *line_pointer[], int number_of_lines)
     {
         printf("%s\n", *line_pointer++);
     }
+}
+
+int reverse_compare(void *a, void *b)
+{
+    return (*base_compare)(b, a);
 }
 
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void *))
