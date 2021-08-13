@@ -13,7 +13,7 @@ int read_lines(char *line_pointer[], int number_of_lines);
 void write_lines(char *line_pointer[], int number_of_lines);
 
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void *));
-int numcmp(char *s1, char *s2);
+int numcmp(const char *s1, const char *s2);
 void swap(void *v[], int i, int j);
 
 #define ALLOC_SIZE 10000 /* size of available space */
@@ -24,7 +24,41 @@ char *alloc(int size);
 
 int main(int argc, char *argv[])
 {
-    return 0;
+    int lines_read;
+    int numeric = 0; /* 1 for true, any other value for false */
+    int reverse = 0;
+    int c;
+
+    while (--argc > 0 && (*++argv)[0] == '-') /* inc. argv, then dereference then get the first character */
+    {
+        while (c = *++argv[0])
+        {
+            switch (c)
+            {
+                case 'r':
+                    reverse = 1;
+                    break;
+                case 'n':
+                    numeric = 1;
+                    break;
+                default:
+                    printf("Error: illegal operation %c\n", c);
+                    argc = 0;
+                    break;
+            }
+        }
+    }
+
+    if ((lines_read = read_lines(line_pointer, MAX_LINES)) >= 0)
+    {
+        int (*comparison_function)(void *, void *) = (int (*)(void *, void*))(numeric ? numcmp : strcmp);
+        my_qsort((void **)line_pointer, 0, lines_read - 1, comparison_function);
+        write_lines(line_pointer, lines_read);
+        return 0;
+    }
+
+    printf("Error: Input too big to sort.");
+    return -1;
 }
 
 int get_line(char line[])
@@ -35,7 +69,7 @@ int get_line(char line[])
     {
         line[char_count++] = c;
     }
-    if (c = '\n')
+    if (c == '\n')
     {
         line[char_count++] = '\n';
     }
@@ -88,8 +122,8 @@ void my_qsort(void *v[], int left, int right, int (*comp)(void *, void *))
         }
     }
     swap(v, left, last);
-    qsort(v, left, last - 1, comp);
-    qsort(v, last + 1, right, comp);
+    my_qsort(v, left, last - 1, comp);
+    my_qsort(v, last + 1, right, comp);
 }
 
 void swap(void *v[], int i, int j)
@@ -101,7 +135,7 @@ void swap(void *v[], int i, int j)
     v[j] = temp;
 }
 
-int numcmp(char *s1, char *s2)
+int numcmp(const char *s1, const char *s2)
 {
     double v1, v2;
 
