@@ -2,6 +2,7 @@
 Be sure that -r works with -n. */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MAX_LINE_LENGTH 100 /* max length of a line, including the null terminating character */
@@ -11,8 +12,9 @@ int get_line(char line[]);
 int read_lines(char *line_pointer[], int number_of_lines);
 void write_lines(char *line_pointer[], int number_of_lines);
 
-void qsort(void *line_pointer[], int left, int right, int (*comp)(void *, void *));
-int numcmp(char *, char *);
+void my_qsort(void *v[], int left, int right, int (*comp)(void *, void *));
+int numcmp(char *s1, char *s2);
+void swap(void *v[], int i, int j);
 
 #define ALLOC_SIZE 10000 /* size of available space */
 static char alloc_buffer[ALLOC_SIZE]; /* storage for alloc */
@@ -65,5 +67,70 @@ void write_lines(char *line_pointer[], int number_of_lines)
     while (number_of_lines-- > 0)
     {
         printf("%s\n", *line_pointer++);
+    }
+}
+
+void my_qsort(void *v[], int left, int right, int (*comp)(void *, void *))
+{
+    int i, last;
+    
+    if (left >= right) /* do nothing if array contains fewer than two elements */
+    {
+        return;
+    }
+    swap(v, left, (left + right) / 2);
+    last = left;
+    for (i = left + 1; i <= right; i++)
+    {
+        if ((*comp)(v[i], v[left]) < 0)
+        {
+            swap(v, ++last, i);
+        }
+    }
+    swap(v, left, last);
+    qsort(v, left, last - 1, comp);
+    qsort(v, last + 1, right, comp);
+}
+
+void swap(void *v[], int i, int j)
+{
+    void *temp;
+
+    temp = v[i];
+    v[i] = v[j];
+    v[j] = temp;
+}
+
+int numcmp(char *s1, char *s2)
+{
+    double v1, v2;
+
+    v1 = atof(s1);
+    v2 = atof(s2);
+    if (v1 < v2)
+    {
+        return -1;
+    }
+    else if (v1 > v2)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+void afree(char *p)
+{
+    if (p >= alloc_buffer && p < alloc_buffer + ALLOC_SIZE)
+    {
+        alloc_pointer = p;
+    }
+}
+
+char *alloc(int size)
+{
+    if (alloc_pointer + size <= alloc_buffer + ALLOC_SIZE) /* does the request fit? */
+    {
+        alloc_pointer += size; /* move the buffer pointer to the next free space */
+        return alloc_pointer - size; /* return the old buffer pointer position */
     }
 }
