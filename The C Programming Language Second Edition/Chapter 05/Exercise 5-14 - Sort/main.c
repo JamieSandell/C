@@ -9,7 +9,7 @@ Be sure that -r works with -n. */
 #define MAX_LINES 5000 /* max number of lines to be sorted */
 char *line_pointer[MAX_LINES]; /* pointers to text lines */
 int get_line(char line[]);
-int read_lines(char *line_pointer[], int number_of_lines);
+int read_lines(char *line_pointer[], int max_number_of_lines);
 void write_lines(char *line_pointer[], int number_of_lines);
 
 int reverse_compare(void *a, void *b);
@@ -82,15 +82,15 @@ int get_line(char line[])
     return char_count;
 }
 
-int read_lines(char *line_pointer[], int number_of_lines)
+int read_lines(char *line_pointer[], int max_number_of_lines)
 {
     int lines_read = 0;
     char line[MAX_LINE_LENGTH];
     char *p;
     int line_length;
-    while ((line_length = get_line(line)) > 0 && lines_read < MAX_LINES)
+    while ((line_length = get_line(line)) > 0)
     {
-        if (lines_read >= MAX_LINES || (p = alloc(line_length)) == NULL)
+        if (lines_read >= max_number_of_lines || (p = alloc(line_length)) == NULL)
         {
             return -1;
         }
