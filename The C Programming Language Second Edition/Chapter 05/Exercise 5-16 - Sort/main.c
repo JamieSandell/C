@@ -38,6 +38,15 @@ int main(int argc, char **argv)
 int get_line(char line[], int line_size)
 {
     int char_count = 0;
-    
+    int c;
+    while ((c = getchar()) != EOF && c != '\n' && char_count < line_size - 1)
+    {
+        line[char_count++] = c;
+    }
+    if (c == '\n')
+    {
+        line[char_count++] = '\n';
+    }
+    line[char_count] = '\0';
     return char_count;
 }
