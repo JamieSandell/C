@@ -6,9 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_LINE_LENGTH 100;
+#define ALLOC_SIZE 10000 /* size of our memory buffer */
+#define MAX_LINE_LENGTH 100
 #define MAX_LINES 5000 /* Max number of lines to be sorted. */
 
+static char alloc_buffer[ALLOC_SIZE]; /* memory buffer */
+static char *alloc_pointer = alloc_buffer; /* next free memory position */
 
 char *line_pointer[MAX_LINES]; /* pointers to text lines */
 
@@ -24,7 +27,17 @@ int numcmp(const char *s1, const char *s2);
 int reverse_cmp(void *a, void *b);
 int str_case_cmp(const char *s1, const char *s2);
 
+void afree(char *p);
+char *alloc(int size);
+
 int main(int argc, char **argv)
 {
     return 0;
+}
+
+int get_line(char line[], int line_size)
+{
+    int char_count = 0;
+    
+    return char_count;
 }
