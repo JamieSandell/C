@@ -1,6 +1,7 @@
 /* Add the option -f to fold upper and lower case together, so that
     case distinctions are not made during sorting; for example, a and A compare equal. */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,7 +19,9 @@ int (*base_compare)(void *, void *);
 int (*compare)(void *, void *);
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void *));
 int numcmp(const char *s1, const char *s2);
+int str_case_cmp(const char *s1, const char *s2);
 void swap(void *v[], int i, int j);
+void str_to_lower(char *s);
 
 #define ALLOC_SIZE 10000
 static char alloc_buffer[ALLOC_SIZE];
@@ -62,7 +65,7 @@ int main(int argc, char **argv)
             print the result */
         if (!numeric)
         {
-            base_compare = (int (*)(void *, void*))(ignore_case ? strcasecmp : strcmp);
+            base_compare = (int (*)(void *, void*))(ignore_case ? str_case_cmp : strcmp); /* Alternative is to use non-standard strcasecmp or stricmp */
         }
         else
         {
@@ -167,6 +170,26 @@ int numcmp(const char *s1, const char *s2)
         return 1;
     }
     return 0;
+}
+
+int str_case_cmp(const char *s1, const char *s2)
+{
+    char t1[MAX_LINE_LENGTH];
+    char t2[MAX_LINE_LENGTH];
+    strcpy(t1, s1);
+    strcpy(t2, s2);
+    str_to_lower(t1);
+    str_to_lower(t2);
+    return strcmp(t1, t2);
+}
+
+void str_to_lower(char *s)
+{
+    while (*s != '\0')
+    {
+        *s = tolower(*s);
+        ++s;
+    }
 }
 
 void swap(void *v[], int i, int j)
