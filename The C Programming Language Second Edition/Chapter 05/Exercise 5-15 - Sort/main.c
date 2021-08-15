@@ -57,7 +57,17 @@ int main(int argc, char **argv)
     int lines_read;
     if ((lines_read = read_lines(line_pointer, MAX_LINES)) >= 0)
     {
-        base_compare = (int (*)(void *, void*))(numeric ? numcmp : strcmp);
+        /* point to the correct comparison function
+            perform the quick sort
+            print the result */
+        if (!numeric)
+        {
+            base_compare = (int (*)(void *, void*))(ignore_case ? strcasecmp : strcmp);
+        }
+        else
+        {
+            base_compare = (int (*)(void *, void*))numcmp;
+        }
         compare = (int (*)(void *, void*))(reverse ? reverse_compare : base_compare);
         my_qsort((void **)line_pointer, 0, lines_read - 1, compare);
         write_lines(line_pointer, lines_read);
