@@ -50,3 +50,23 @@ int get_line(char line[], int line_size)
     line[char_count] = '\0';
     return char_count;
 }
+
+int read_lines(char *line_pointer[], int max_number_of_lines)
+{
+    int lines_read = 0;
+    int char_count;
+    char line[MAX_LINE_LENGTH];
+    char *p;
+
+    while((char_count = get_line(line, MAX_LINE_LENGTH)) > 0)
+    {
+        if (lines_read >= max_number_of_lines || (p = alloc(char_count)) == NULL)
+        {
+            return -1;
+        }
+        strcpy(p, line);
+        line_pointer[lines_read++] = p;
+    }
+    return lines_read;
+}
+
