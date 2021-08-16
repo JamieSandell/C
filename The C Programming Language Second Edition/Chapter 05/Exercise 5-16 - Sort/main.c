@@ -23,6 +23,7 @@ int read_lines(char *line_pointer[], int max_number_of_lines);
 void write_lines(char* line_pointer[], int number_of_lines);
 
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*));
+int directory_order_comp(const char *s1, const char *s2);
 int numcmp(const char *s1, const char *s2);
 int reverse_cmp(void *a, void *b);
 void str_to_lower(char *s);
@@ -41,7 +42,10 @@ int main(int argc, char **argv)
     int directory_order = 0;
     while (--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
     {
-        while (c = *++argv[0]) /* get the next character of */
+        while (c = *++argv[0]) /* [] binds tighter than, argv equivalent to:
+                                    argv[0] (memory address of the first element that argv is currently pointing to)
+                                    ++ increment/walk along this string at argv, to the next character in it
+                                    * dereference it all to get the value/character */
         {
             switch (c)
             {
@@ -130,6 +134,12 @@ void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*))
     swap(v, left, last);
     my_qsort(v, left, last -  1, comp);
     my_qsort(v, last + 1, right, comp);
+}
+
+int directory_order_comp(const char *s1, const char *s2)
+{
+    int input_validated = 0;
+    
 }
 
 /* Retuns:
