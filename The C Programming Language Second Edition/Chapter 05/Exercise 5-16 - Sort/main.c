@@ -22,6 +22,9 @@ int get_line(char line[], int line_size);
 int read_lines(char *line_pointer[], int max_number_of_lines);
 void write_lines(char* line_pointer[], int number_of_lines);
 
+int validate_d(, )
+void validate_input(const void *v[], int number_of_lines, int (*comp)(void *v[]));
+
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*));
 int directory_order_comp(const char *s1, const char *s2);
 int numcmp(const char *s1, const char *s2);
@@ -67,6 +70,15 @@ int main(int argc, char **argv)
                     break;
             }
         }
+    }
+
+    int lines_read = 0;
+    while ((lines_read = read_lines(line_pointer, MAX_LINES)) > 0)
+    {
+        /* validate the input compared to the command line argument flags
+            point to the correct comparison function
+            perform the quick sort
+            print the result */
     }
     return 0;
 }
@@ -114,6 +126,11 @@ void write_lines(char* line_pointer[], int number_of_lines)
     }
 }
 
+void validate_input(char *line_pointer[], int number_of_lines, int (*comp)(void *))
+{
+
+}
+
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*))
 {
     int i, last;
@@ -136,10 +153,11 @@ void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*))
     my_qsort(v, last + 1, right, comp);
 }
 
+/* Which makes comparisons only on letters, numbers and blanks.
+    You must validate the input before calling. */
 int directory_order_comp(const char *s1, const char *s2)
 {
-    int input_validated = 0;
-    
+    return strcmp(s1, s2);
 }
 
 /* Retuns:
