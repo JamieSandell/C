@@ -9,6 +9,7 @@
 #define ALLOC_SIZE 10000 /* size of our memory buffer */
 #define MAX_LINE_LENGTH 100
 #define MAX_LINES 5000 /* Max number of lines to be sorted. */
+#define MAX_ARGS 5 /* including room for no args (min size would be 1) */
 
 static char alloc_buffer[ALLOC_SIZE]; /* memory buffer */
 static char *alloc_pointer = alloc_buffer; /* next free memory position */
@@ -22,8 +23,8 @@ int get_line(char line[], int line_size);
 int read_lines(char *line_pointer[], int max_number_of_lines);
 void write_lines(char* line_pointer[], int number_of_lines);
 
-int validate_d(, )
-void validate_input(const void *v[], int number_of_lines, int (*comp)(void *v[]));
+int validate_d(const char *v[]);
+void validate_input(const char *v[], int number_of_lines, int (*validation)(const char *v[]));
 
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*));
 int directory_order_comp(const char *s1, const char *s2);
@@ -43,6 +44,13 @@ int main(int argc, char **argv)
     int numeric = 0;
     int case_insensitive = 0;
     int directory_order = 0;
+    char arguments[MAX_ARGS];
+
+    for (int i = 0; i < MAX_ARGS)
+    {
+        arguments[MAX_ARGS] = '\0';
+    }
+
     while (--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
     {
         while (c = *++argv[0]) /* [] binds tighter than, argv equivalent to:
@@ -126,7 +134,7 @@ void write_lines(char* line_pointer[], int number_of_lines)
     }
 }
 
-void validate_input(char *line_pointer[], int number_of_lines, int (*comp)(void *))
+void validate_input(const char *line_pointer[], int number_of_lines, int (*validation)(const char *v[]))
 {
 
 }
