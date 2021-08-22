@@ -162,6 +162,7 @@ int read_lines(char *line_pointer[], int max_number_of_lines)
         {
             return -1;
         }
+        line[char_count - 1] = '\0'; /* Delete the newline */
         strcpy(p, line);
         line_pointer[lines_read++] = p;
     }
