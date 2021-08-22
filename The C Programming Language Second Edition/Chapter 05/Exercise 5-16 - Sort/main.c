@@ -13,19 +13,23 @@
 
 static char alloc_buffer[ALLOC_SIZE]; /* memory buffer */
 static char *alloc_pointer = alloc_buffer; /* next free memory position */
-
+static int reverse = 0; /* logic variables */
+static int numeric = 0;
+static int case_insensitive = 0;
+static int directory_order = 0;
 char *line_pointer[MAX_LINES]; /* pointers to text lines */
-
 int (*base_compare)(void *a, void *b); /* our function pointers to comparison functions */
 int (*compare)(void *a, void *b);
 
+/* input and output */
 int get_line(char line[], int line_size);
 int read_lines(char *line_pointer[], int max_number_of_lines);
 void write_lines(char* line_pointer[], int number_of_lines);
-
-int validate_d(const char *v[]);
-void validate_input(const char *v[], int number_of_lines, int (*validation)(const char *v[]));
-
+/* validation */
+int validate_d(const char *s);
+int validate_n(const char *s);
+int validate_input(const char *v[], int number_of_lines, int (*validation)(const char *v[]));
+/* sort and comparisons */
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*));
 int directory_order_comp(const char *s1, const char *s2);
 int numcmp(const char *s1, const char *s2);
@@ -33,23 +37,14 @@ int reverse_cmp(void *a, void *b);
 void str_to_lower(char *s);
 int str_case_cmp(const char *s1, const char *s2);
 void swap(void *v[], int i, int j);
-
+/* memory */
 void afree(char *p);
 char *alloc(int size);
 
 int main(int argc, char **argv)
 {
-    int c;
-    int reverse = 0;
-    int numeric = 0;
-    int case_insensitive = 0;
-    int directory_order = 0;
+    int c;    
     char arguments[MAX_ARGS];
-
-    for (int i = 0; i < MAX_ARGS)
-    {
-        arguments[MAX_ARGS] = '\0';
-    }
 
     while (--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
     {
@@ -80,15 +75,53 @@ int main(int argc, char **argv)
         }
     }
 
-    int lines_read = 0;
-    while ((lines_read = read_lines(line_pointer, MAX_LINES)) > 0)
+    int lines_read;
+    if ((lines_read = read_lines(line_pointer, MAX_LINES)) > 0)
     {
         /* validate the input compared to the command line argument flags
             point to the correct comparison function
             perform the quick sort
             print the result */
+
+        int (*validation_pointer)(const char *) = NULL;
+        for (int i = 0; i < MAX_ARGS && arguments[i] != '\0'; ++i)
+        {
+            switch (arguments[i])
+            {
+                case 'n':
+                    validation_pointer = validate_n;
+                    break;
+                case 'd':
+                    validation_pointer  = validate_d;
+                    break;
+            }
+            validate_input(line_pointer, lines_read, validation_pointer);
+        }
+
+        if (directory_order)
+        {
+            base_compare = (int (*)(void *, void *))(directory_order_comp); /* only needs to work with -f (case insensitive flag) */
+        }
+        else
+        {
+            if (!numeric)
+            {
+                base_compare = (int (*)(void *, void *))(case_insensitive ? str_case_cmp : strcmp); /* case insenstivie or case sensitive comparison*/
+            }
+            else
+            {
+                base_compare = (int (*)(void*, void *))numcmp; /* numeric comparison */
+            }
+        }
+        /* Now we've set our comparison function pointer up, are we bothered about reversing the comparison order? */
+        compare = (int (*)(void *, void*))(reverse ? reverse_cmp : base_compare);
+
+        my_qsort((void **)line_pointer, 0, lines_read - 1, compare); /* call my_qsort with our chosen comparison function */
+        write_lines(line_pointer, lines_read);
+        return 0;
     }
-    return 0;
+    printf("Error: input too big to sort\n");
+    return -1;
 }
 
 int get_line(char line[], int line_size)
@@ -134,9 +167,45 @@ void write_lines(char* line_pointer[], int number_of_lines)
     }
 }
 
-void validate_input(const char *line_pointer[], int number_of_lines, int (*validation)(const char *v[]))
+/* Which makes comparisons only on letters, numbers and blanks.
+    You must validate the input before calling.
+    Returns 0 if the string contains only letters, numbers and blanks, -1 otherwise. */
+int validate_d(const char *s)
 {
+    while (*s++ != '\0')
+    {
+        if (isdigit(*s) == 0 && isalpha(*s) == 0 && *s != ' ')
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
 
+/* Returns 0 if the string is numerical, -1 if not */
+int validate_n(const char *s)
+{
+    if (isalpha(s) == 0)
+    {
+        return -1;
+    }
+    return 0;
+}
+
+
+
+/* Returns 0 if the input is valid (validation is the pointer to the validation function to use).
+    -1 if the input is invalid */
+int validate_input(const char *v[], int number_of_lines, int (*validation)(const char *[]))
+{
+    while (number_of_lines-- > 0)
+    {
+        if (validation(v) != 0)
+        {
+            return -1;
+        }
+    }
+    return 0;
 }
 
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*))
@@ -162,7 +231,10 @@ void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*))
 }
 
 /* Which makes comparisons only on letters, numbers and blanks.
-    You must validate the input before calling. */
+    You must validate the input before calling.
+    0 if strings are equal
+    1 if s1 has a greater numerical value than s2
+    -1 if s1 has a lesser numerical value than s2 */
 int directory_order_comp(const char *s1, const char *s2)
 {
     return strcmp(s1, s2);
