@@ -28,7 +28,7 @@ void write_lines(char* line_pointer[], int number_of_lines);
 /* validation */
 int validate_d(const char *s);
 int validate_n(const char *s);
-int validate_input(const char *v[], int number_of_lines, int (*validation)(const char *v[]));
+int validate_input(const char *v[], int number_of_lines, int (*validation)(const char *v));
 /* sort and comparisons */
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*));
 int directory_order_comp(const char *s1, const char *s2);
@@ -42,10 +42,16 @@ void afree(char *p);
 char *alloc(int size);
 
 int main(int argc, char **argv)
-{
-    int c;    
-    char arguments[MAX_ARGS];
+{       
+    char arguments[MAX_ARGS]; /* Stores the read in arguments for validation later on. \0 == end of arguments */
+    for (int i = 0; i < MAX_ARGS; ++i)
+    {
+        arguments[i] = '\0';
+    }
 
+    /* Set the logic flags based on the arguments passed in */
+    int processed_arg = 0;
+    int c; 
     while (--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
     {
         while (c = *++argv[0]) /* [] binds tighter than, argv equivalent to:
@@ -53,6 +59,7 @@ int main(int argc, char **argv)
                                     ++ increment/walk along this string at argv, to the next character in it
                                     * dereference it all to get the value/character */
         {
+            arguments[processed_arg++] = c;
             switch (c)
             {
                 case 'r':
@@ -68,22 +75,17 @@ int main(int argc, char **argv)
                     directory_order = 1;
                     break;
                 default:
-                    argc = 0;
                     printf("Error: %c is an invalid argument\n", c);
-                    break;
+                    return -1;
             }
         }
     }
-
+    /* Get the input */
     int lines_read;
     if ((lines_read = read_lines(line_pointer, MAX_LINES)) > 0)
     {
-        /* validate the input compared to the command line argument flags
-            point to the correct comparison function
-            perform the quick sort
-            print the result */
-
-        int (*validation_pointer)(const char *) = NULL;
+        /* Validate the input */
+        int (*validation_pointer)(const char *) = NULL; /* function pointer to a validation function */
         for (int i = 0; i < MAX_ARGS && arguments[i] != '\0'; ++i)
         {
             switch (arguments[i])
@@ -94,10 +96,17 @@ int main(int argc, char **argv)
                 case 'd':
                     validation_pointer  = validate_d;
                     break;
+            }            
+            if (validation_pointer != NULL) /* if the validation pointer points to a function then proceed */
+            {
+                if (validate_input((const char**)line_pointer, lines_read, validation_pointer) == -1)
+                {
+                    printf("The validation of input failed when compared with the argument flag -%c\n", c);
+                    return -1;
+                }
             }
-            validate_input(line_pointer, lines_read, validation_pointer);
         }
-
+        /* Point to the correct comparison function */
         if (directory_order)
         {
             base_compare = (int (*)(void *, void *))(directory_order_comp); /* only needs to work with -f (case insensitive flag) */
@@ -115,8 +124,8 @@ int main(int argc, char **argv)
         }
         /* Now we've set our comparison function pointer up, are we bothered about reversing the comparison order? */
         compare = (int (*)(void *, void*))(reverse ? reverse_cmp : base_compare);
-
-        my_qsort((void **)line_pointer, 0, lines_read - 1, compare); /* call my_qsort with our chosen comparison function */
+        /* Call the sort with our chosen comparison function and then print the output */
+        my_qsort((void **)line_pointer, 0, lines_read - 1, compare);
         write_lines(line_pointer, lines_read);
         return 0;
     }
@@ -196,11 +205,11 @@ int validate_n(const char *s)
 
 /* Returns 0 if the input is valid (validation is the pointer to the validation function to use).
     -1 if the input is invalid */
-int validate_input(const char *v[], int number_of_lines, int (*validation)(const char *[]))
+int validate_input(const char *v[], int number_of_lines, int (*validation)(const char *))
 {
     while (number_of_lines-- > 0)
     {
-        if (validation(v) != 0)
+        if (validation(*v++) != 0)
         {
             return -1;
         }
@@ -237,7 +246,7 @@ void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*))
     -1 if s1 has a lesser numerical value than s2 */
 int directory_order_comp(const char *s1, const char *s2)
 {
-    return strcmp(s1, s2);
+    return (case_insensitive ? str_case_cmp(s1, s2) : strcmp(s1, s2));
 }
 
 /* Retuns:
