@@ -99,9 +99,9 @@ int main(int argc, char **argv)
             }            
             if (validation_pointer != NULL) /* if the validation pointer points to a function then proceed */
             {
-                if (validate_input((const char**)line_pointer, lines_read, validation_pointer) == -1)
+                if (!validate_input((const char**)line_pointer, lines_read, validation_pointer))
                 {
-                    printf("The validation of input failed when compared with the argument flag -%c\n", c);
+                    printf("The validation of input failed when compared with the argument flag -%c\n", arguments[i]);
                     return -1;
                 }
             }
@@ -179,43 +179,44 @@ void write_lines(char* line_pointer[], int number_of_lines)
 
 /* Which makes comparisons only on letters, numbers and blanks.
     You must validate the input before calling.
-    Returns 0 if the string contains only letters, numbers and blanks, -1 otherwise. */
+    Returns non-zero if the string contains only letters, numbers and blanks, 0 otherwise. */
 int validate_d(const char *s)
 {
-    while (*s++ != '\0')
+    while (*s != '\0')
     {
-        if (isdigit(*s) == 0 && isalpha(*s) == 0 && *s != ' ')
+        if (!isspace(*s) && !isalnum(*s))
         {
-            return -1;
-        }
+            return 0;
+        }    
+        ++s;
     }
-    return 0;
+    return 1;
 }
 
-/* Returns 0 if the string is numerical, -1 if not */
+/* Returns non-zero if the string is numerical, 0 if not */
 int validate_n(const char *s)
 {
     if (isalpha(s) == 0)
     {
-        return -1;
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 
 
-/* Returns 0 if the input is valid (validation is the pointer to the validation function to use).
-    -1 if the input is invalid */
+/* Returns non-zero if the input is valid (validation is the pointer to the validation function to use).
+    0 if the input is invalid */
 int validate_input(const char *v[], int number_of_lines, int (*validation)(const char *))
 {
     while (number_of_lines-- > 0)
     {
-        if (validation(*v++) != 0)
+        if (!validation(*v++))
         {
-            return -1;
+            return 0;
         }
     }
-    return 0;
+    return 1;
 }
 
 void my_qsort(void *v[], int left, int right, int (*comp)(void *, void*))
