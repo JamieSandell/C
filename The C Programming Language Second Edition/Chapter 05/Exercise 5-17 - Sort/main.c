@@ -15,10 +15,10 @@
 static char alloc_buffer[MAX_ALLOC_SIZE];
 static char* alloc_pointer = alloc_buffer;
 /* State */
-static case_insensitive = 0;
-static directory = 0;
-static numeric = 0;
-static reverse = 0;
+static int case_insensitive = 0;
+static int directory = 0;
+static int numeric = 0;
+static int reverse = 0;
 
 /* Compare and sort */
 void my_qsort(void *v[], int left, int right, int (*compare)(void *a, void *b));
@@ -68,6 +68,27 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *))
     my_qsort(v, last + 1, right, compare);
 }
 
+/* Returns:
+    Converts the two strings to number and compares them
+    0 if equal
+    1 if the first non-matching character in s1 is greater than that of str2
+    -1 if the first non-matching character in s2 is lower than that of str2 */
+int numcmp(char *s1, char *s2)
+{
+    double d1 = atof(s1);
+    double d2 = atof(s2);
+
+    if (d1 == d2)
+    {
+        return 0;
+    }
+    else if(d1 > d2)
+    {
+        return 1;
+    }
+    return -1;
+}
+
 /* Swap the ith and jth elements of v[] */
 void swap(void *v[], int i, int j)
 {
@@ -76,6 +97,30 @@ void swap(void *v[], int i, int j)
     temp = v[i];
     v[i] = v[j];
     v[j] = temp;
+}
+
+/* Stores a line of text in line[] 
+    Returns the number of characters read */
+int get_line(char line[], int max_line_size)
+{
+    int char_count = 0;
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF && char_count < max_line_size)
+    {
+        line[char_count++] = c;
+    }
+    if (c == '\n')
+    {
+        line[char_count++] = '\n';
+    }
+    line[char_count] = '\0';
+    return char_count;
+}
+
+int read_lines(char *line_pointer[], int max_lines)
+{
+    int number_of_lines_read = 0;
+    char line[max_lines];
 }
 
 void afree(char *p)
