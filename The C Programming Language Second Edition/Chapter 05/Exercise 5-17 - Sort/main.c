@@ -26,9 +26,10 @@ int numcmp(char *s1, char *s2);
 void swap(void *v[], int i, int j);
 /* i/o */
 int get_line(char line[], int max_line_size);
-int read_lines(char *line_pointer[], int max_lines);
-void write_lines(char *line_pointer[], int number_of_lines);
+int read_lines(char *line_pointer[], int max_lines, int max_line_size);
+void write_lines(const char *line_pointer[], int number_of_lines);
 /* Validation */
+int validate(const char *s, int (*validation)(const char *s));
 /* Memory */
 void afree(char *p);
 char *alloc(int size);
@@ -117,10 +118,35 @@ int get_line(char line[], int max_line_size)
     return char_count;
 }
 
-int read_lines(char *line_pointer[], int max_lines)
+/* Stores lines in an internal memory buffer and stores pointers to them in line_pointer
+    Returns the number of lines read
+    Returns -1 if out of memory or lines read exceeds max_lines */
+int read_lines(char *line_pointer[], int max_lines, int max_line_size)
 {
     int number_of_lines_read = 0;
     char line[max_lines];
+    char count;
+    char *p;
+    while ((count = get_line(line, max_line_size)) > 0)
+    {
+        if (number_of_lines_read >= max_lines || (p = alloc(count)) == NULL)
+        {
+            printf("Error: Out of memory, or lines read in exceeded max_line_size.\n");
+            return -1;
+        }
+        line[count - 1] = '\0'; /* Delete the new line character */
+        strcpy(p, line); /* Copy what we read in, to the memory address within out memory buffer that p points to */
+        line_pointer[number_of_lines_read++] = p; /* Add that pointer to our array of pointers */
+    }
+    return number_of_lines_read;
+}
+
+void write_lines(const char *line_pointer[], int number_of_lines)
+{
+    while(number_of_lines-- > 0)
+    {
+        printf("%s\n", *line_pointer++);
+    }
 }
 
 void afree(char *p)
