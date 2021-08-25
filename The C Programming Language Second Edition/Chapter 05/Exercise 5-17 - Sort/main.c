@@ -26,10 +26,12 @@ int numcmp(char *s1, char *s2);
 void swap(void *v[], int i, int j);
 /* i/o */
 int get_line(char line[], int max_line_size);
-int read_lines(char *line_pointer[], int max_lines, int max_line_size);
+int read_lines(char *line_pointer[], int max_line_size);
 void write_lines(const char *line_pointer[], int number_of_lines);
 /* Validation */
-int validate(const char *s, int (*validation)(const char *s));
+int validate_input(const char *v[], int (*validation)(const char *), int number_of_lines);
+int validate_n(const char *s);
+int validate_d(const char *s);
 /* Memory */
 void afree(char *p);
 char *alloc(int size);
@@ -121,15 +123,15 @@ int get_line(char line[], int max_line_size)
 /* Stores lines in an internal memory buffer and stores pointers to them in line_pointer
     Returns the number of lines read
     Returns -1 if out of memory or lines read exceeds max_lines */
-int read_lines(char *line_pointer[], int max_lines, int max_line_size)
+int read_lines(char *line_pointer[], int max_line_size)
 {
     int number_of_lines_read = 0;
-    char line[max_lines];
+    char line[MAX_LINES];
     char count;
     char *p;
     while ((count = get_line(line, max_line_size)) > 0)
     {
-        if (number_of_lines_read >= max_lines || (p = alloc(count)) == NULL)
+        if (number_of_lines_read >= MAX_LINES || (p = alloc(count)) == NULL)
         {
             printf("Error: Out of memory, or lines read in exceeded max_line_size.\n");
             return -1;
@@ -147,6 +149,32 @@ void write_lines(const char *line_pointer[], int number_of_lines)
     {
         printf("%s\n", *line_pointer++);
     }
+}
+
+/* 
+    Validates a c-style string (first param) against the validation routine passed in as the second param.
+    Returns 0 if the validation failed.
+    Returns non-zero if the validation succeeded */
+int validate_input(const char *v[], int (*validation)(const char *), int number_of_lines)
+{
+    while(number_of_lines-- > 0)
+    {
+        if (!validation(*v++))
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int validate_n(const char *s)
+{
+    return isdigit(*s);
+}
+
+int validate_d(const char *s)
+{
+    
 }
 
 void afree(char *p)
