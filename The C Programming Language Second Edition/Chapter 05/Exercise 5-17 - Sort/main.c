@@ -24,17 +24,20 @@ static int reverse = 0;
 void my_qsort(void *v[], int left, int right, int (*compare)(void *a, void *b));
 int numcmp(char *s1, char *s2);
 void swap(void *v[], int i, int j);
+/* Conversions */
+int str_to_float(char *s);
 /* i/o */
 int get_line(char line[], int max_line_size);
 int read_lines(char *line_pointer[], int max_line_size);
 void write_lines(const char *line_pointer[], int number_of_lines);
+/* Memory */
+void afree(char *p);
+char *alloc(int size);
 /* Validation */
 int validate_input(const char *v[], int (*validation)(const char *), int number_of_lines);
 int validate_n(const char *s);
 int validate_d(const char *s);
-/* Memory */
-void afree(char *p);
-char *alloc(int size);
+
 
 int main(int argc, char *v[])
 {
@@ -102,6 +105,38 @@ void swap(void *v[], int i, int j)
     v[j] = temp;
 }
 
+int str_to_float(char *s)
+{
+    int c, sign;
+    float power;
+
+    while(isspace(*s++)) /* skip white space */
+        ;
+    if (!(isdigit(*s) && *s != EOF && *s != '+' && *s != '-'))
+    {
+        *s--; /* it's not a number */
+        return 0;
+    }
+    sign = (*s == '-') ? -1 : 1;
+    if (*s == '+' || *s == '-')
+    {
+        int d = *s; /* Remember the sign character */
+        s++
+        if (!isdigit(*s))
+        {
+            if (*s != EOF)
+            {
+                /* next character wasn't a digit, and wasn't EOF so push back the sign character and then the character just read in back on the buffer */
+                --s;
+            }
+            --s;
+            return (d); /* to indicate what happened */
+        }
+    }
+    for 
+}
+
+
 /* Stores a line of text in line[] 
     Returns the number of characters read */
 int get_line(char line[], int max_line_size)
@@ -151,6 +186,26 @@ void write_lines(const char *line_pointer[], int number_of_lines)
     }
 }
 
+
+void afree(char *p)
+{
+    if (p >= alloc_buffer && p < alloc_buffer + MAX_ALLOC_SIZE)
+    {
+        alloc_pointer = p;
+    }
+}
+
+/* Returns a pointer to the next free position if there's room, otherwise returns NULL */
+char *alloc(int size)
+{
+    if (alloc_buffer + MAX_ALLOC_SIZE - alloc_pointer >= size) /* Does it fit? */
+    {
+        alloc_pointer += size;
+        return alloc_pointer - size;
+    }
+    return NULL;
+}
+
 /* 
     Validates a c-style string (first param) against the validation routine passed in as the second param.
     Returns 0 if the validation failed.
@@ -175,23 +230,4 @@ int validate_n(const char *s)
 int validate_d(const char *s)
 {
     
-}
-
-void afree(char *p)
-{
-    if (p >= alloc_buffer && p < alloc_buffer + MAX_ALLOC_SIZE)
-    {
-        alloc_pointer = p;
-    }
-}
-
-/* Returns a pointer to the next free position if there's room, otherwise returns NULL */
-char *alloc(int size)
-{
-    if (alloc_buffer + MAX_ALLOC_SIZE - alloc_pointer >= size) /* Does it fit? */
-    {
-        alloc_pointer += size;
-        return alloc_pointer - size;
-    }
-    return NULL;
 }
