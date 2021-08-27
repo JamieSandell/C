@@ -1,7 +1,8 @@
 /* Add a field-handling capability, so sorting may be done on fields within lines, each field sorted according to an independent set of options.
 (The index for this book was sorted with -df for the index category and -n for the page numbers.) 
 
-For this we can use tab as the delimiter to split the line in to columns.
+Thoughts:
+For this we can use tab as the delimiter to split the line into columns.
 Then the arguments can look like this:
 -fd 0 -n 1
 
@@ -20,7 +21,7 @@ then it would sort that output with a case insensitive directory sort by compari
 #define MAX_ALLOC_SIZE 10000 /* for the custom memory management */
 
 /* Function pointers */
-int (*base_compare)(void *, void *);
+static int (*base_compare)(void *, void *);
 /* Memory */
 static char alloc_buffer[MAX_ALLOC_SIZE];
 static char* alloc_pointer = alloc_buffer;
@@ -51,7 +52,6 @@ char *alloc(int size);
 int validate_input(const char *v[], int (*validation)(const char *), int number_of_lines);
 int validate_n(const char *s);
 int validate_d(const char *s);
-
 
 int main(int argc, char *argv[])
 {
