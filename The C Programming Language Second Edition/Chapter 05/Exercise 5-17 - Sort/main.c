@@ -1,5 +1,13 @@
 /* Add a field-handling capability, so sorting may be done on fields within lines, each field sorted according to an independent set of options.
-(The index for this book was sorted with -df for the index category and -n for the page numbers.) */
+(The index for this book was sorted with -df for the index category and -n for the page numbers.) 
+
+For this we can use tab as the delimiter to split the line in to columns.
+Then the arguments can look like this:
+-fd 0 -n 1
+
+which would sort the input by a numerical sort by comparing the 2nd column
+then it would sort that output with a case insensitive directory sort by comparing the 1st column
+*/
 
 #include <ctype.h>
 #include <stdio.h>
@@ -11,6 +19,8 @@
 #define MAX_LINE_SIZE 100 /* including the null terminating character */
 #define MAX_ALLOC_SIZE 10000 /* for the custom memory management */
 
+/* Function pointers */
+int (*base_compare)(void *, void *);
 /* Memory */
 static char alloc_buffer[MAX_ALLOC_SIZE];
 static char* alloc_pointer = alloc_buffer;
@@ -22,10 +32,14 @@ static int reverse = 0;
 
 /* Compare and sort */
 void my_qsort(void *v[], int left, int right, int (*compare)(void *a, void *b));
+int directory_order_comp(const char *s1, const char *s2);
 int numcmp(char *s1, char *s2);
+int reverse_cmp(void *a, void *b);
+int str_case_cmp(const char *s1, const char *s2);
+void str_to_lower(char *s);
 void swap(void *v[], int i, int j);
 /* Conversions */
-int str_to_float(char *s);
+int str_to_float(const char *s, float *number);
 /* i/o */
 int get_line(char line[], int max_line_size);
 int read_lines(char *line_pointer[], int max_line_size);
@@ -39,17 +53,111 @@ int validate_n(const char *s);
 int validate_d(const char *s);
 
 
-int main(int argc, char *v[])
+int main(int argc, char *argv[])
 {
     if (argc > MAX_ARGS)
     {
         printf("Error: Too many arguments, max is %i\n", MAX_ARGS - 1); /* ignore the first arg as that's the program filepath */
         return -1;
     }
+    char arguments[MAX_ARGS]; /* Stores the read in arguments for validation later on. \0 == end of arguments */
+    int processed_arg = 0;
+    for (int i = 0; i < MAX_ARGS; ++i)
+    {
+        arguments[i] = '\0';
+    }
 
     char *line_pointer[MAX_LINES]; /* To store the pointers to our lines that will be in our memory buffer */
-    int argc_initial_value = argc; /* cache a copy as we'll be maniupulating argc, and will need the original value later on */
-    return 0;
+    int argc_initial_value = argc; /* cache a copy as we'll be changing argc, as we will need the original value later on */
+    int c;
+    /* Process the arguments, turning on any requested states */
+    while(--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
+    {
+        while (c = *++argv[0]) /*   [] binds tighter than ++
+                                    argv gives us the memory address of the first array (char string), [0] gives us the address of the first element of that
+                                    ++ increment/walk along that array to get the address of that character / skipping the first character ('-')
+                                    * dereference it to get the value/character */
+        {
+            arguments[processed_arg++] = c;
+            switch (c)
+            {
+                case 'r':
+                    reverse = 1;
+                    break;
+                case 'n':
+                    numeric = 1;
+                    break;
+                case 'd':
+                    directory = 1;
+                    break;
+                case 'f':
+                    case_insensitive = 1;
+                    break;
+                default:
+                    printf("Error: %c is an invalid argument\n", c);
+                    return -1;
+            }
+        }
+    }
+    /* Get the input */
+    int lines_read = 0;
+    if ((lines_read = read_lines(line_pointer, MAX_LINE_SIZE)) > 0)
+    {
+        /* Validate the input */
+        int (*validation_pointer)(const char *) = NULL; /* Function pointer to a validation function */
+        for (int i = 0; arguments[i] != '\0'; ++i)
+        {
+            switch (arguments[i])
+            {
+                case 'r':
+                case 'f':
+                    validation_pointer = NULL;
+                    break;
+                case 'n':
+                    validation_pointer = validate_n;
+                    break;
+                case 'd':
+                    validation_pointer = validate_d;
+                    break;
+                default:
+                    printf("Warning: no validation case for argument %c\n", arguments[i]);
+                    break;
+            }
+            if (validation_pointer != NULL)
+            {
+                if (!(validate_input((const char**)line_pointer, validation_pointer, lines_read)))
+                {
+                    printf("The validation of input failed when compared with the argument flag %c\n", arguments[i]);
+                    return -1;
+                }
+            }
+        }
+        /* Point to the correct comparison function */
+        if (directory)
+        {
+            base_compare = (int (*)(void *, void *))(directory_order_comp); /* only needs to work with -f (case insensitive flag) */
+        }
+        else
+        {
+            if (!numeric)
+            {
+                base_compare = (int (*)(void *, void*))(case_insensitive ? str_case_cmp: strcmp);
+            }
+            else
+            {
+                base_compare = (int (*)(void *, void*))numcmp;
+            }
+        }
+        /* Do we need to reverse the comparison? */
+        int (*compare)(void *, void *) = (int (*)(void *, void*))(reverse ? reverse_cmp: base_compare);
+        /* Sort with the correct comparison routine and output the result */
+        my_qsort((void **)line_pointer, 0, lines_read - 1, compare);
+        write_lines((const char**)line_pointer, lines_read);
+        return 0;
+    }
+
+    printf("Error: input too big to sort\n");
+    return -1;
 }
 
 void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *))
@@ -74,6 +182,16 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *))
     my_qsort(v, last + 1, right, compare);
 }
 
+/* Which makes comparisons only on letters, numbers and blanks.
+    You must validate the input before calling.
+    0 if strings are equal
+    1 if s1 has a greater numerical value than s2
+    -1 if s1 has a lesser numerical value than s2 */
+int directory_order_comp(const char *s1, const char *s2)
+{
+    return (case_insensitive ? str_case_cmp(s1, s2) : strcmp(s1, s2));
+}
+
 /* Returns:
     Converts the two strings to number and compares them
     0 if equal
@@ -95,6 +213,39 @@ int numcmp(char *s1, char *s2)
     return -1;
 }
 
+int reverse_cmp(void *a, void *b)
+{
+    return base_compare(b, a);
+}
+
+int str_case_cmp(const char *s1, const char *s2)
+{
+    char t1[MAX_LINE_SIZE];
+    char t2[MAX_LINE_SIZE];
+    strcpy(t1, s1);
+    strcpy(t2, s2);
+    str_to_lower(t1);
+    str_to_lower(t2);
+    return strcmp(t1, t2);
+}
+
+/* Converts a string to lower case */
+void str_to_lower(char *s)
+{
+    while(*s != '\0')
+    {
+        *s = tolower(*s);
+        s++;
+    }
+}
+
+/* Case insensitive.
+    Returns:
+    0 if strings are equal
+    1 if the first non-matching character in s1 has a greater ASCII value than that of s2
+    -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2 */
+
+
 /* Swap the ith and jth elements of v[] */
 void swap(void *v[], int i, int j)
 {
@@ -105,14 +256,16 @@ void swap(void *v[], int i, int j)
     v[j] = temp;
 }
 
-int str_to_float(char *s)
+/*  Tries to convert *s to a float and store it in *number
+    Returns 0 if not a number
+    Returns non-zero if success */
+int str_to_float(const char *s, float *number)
 {
-    int c, sign;
+    /* TODO: Code adapted from GetFloat earlier in chapter 5. Some wasteful operations such as "push back on to the buffer" can be omitted */
+    int sign;
     float power;
 
-    while(isspace(*s++)) /* skip white space */
-        ;
-    if (!(isdigit(*s) && *s != EOF && *s != '+' && *s != '-'))
+    if (!isdigit(*s) && *s != EOF && *s != '+' && *s != '-')
     {
         *s--; /* it's not a number */
         return 0;
@@ -121,19 +274,28 @@ int str_to_float(char *s)
     if (*s == '+' || *s == '-')
     {
         int d = *s; /* Remember the sign character */
-        s++
+        s++;
         if (!isdigit(*s))
         {
-            if (*s != EOF)
-            {
-                /* next character wasn't a digit, and wasn't EOF so push back the sign character and then the character just read in back on the buffer */
-                --s;
-            }
-            --s;
-            return (d); /* to indicate what happened */
+            return 0;
         }
     }
-    for 
+    for (*number = 0.0f; isdigit(*s); s++)
+    {
+        *number = 10.0f * *number + (*s - '0');
+    }
+    if (*s == '.') /* Get the fractional part */
+    {
+        s++;
+    }
+    for (power = 1.0f; isdigit(*s); s++)
+    {
+        *number = 10.0f * *number + (*s - '0');
+        power *= 10.0f;
+    }
+
+    *number *= sign / power;
+    return 1;
 }
 
 
@@ -206,8 +368,7 @@ char *alloc(int size)
     return NULL;
 }
 
-/* 
-    Validates a c-style string (first param) against the validation routine passed in as the second param.
+/*  Validates a c-style string (first param) against the validation routine passed in as the second param.
     Returns 0 if the validation failed.
     Returns non-zero if the validation succeeded */
 int validate_input(const char *v[], int (*validation)(const char *), int number_of_lines)
@@ -222,12 +383,27 @@ int validate_input(const char *v[], int (*validation)(const char *), int number_
     return 1;
 }
 
+/*  Returns 0 if not a valid number
+    Returns 1 if a valid number */
 int validate_n(const char *s)
 {
-    return isdigit(*s);
+    float number;
+    float *number_pointer = &number;
+    return str_to_float(s, number_pointer);
 }
 
+/* Which makes comparisons only on letters, numbers and blanks.
+    You must validate the input before calling.
+    Returns non-zero if the string contains only letters, numbers and blanks, 0 otherwise. */
 int validate_d(const char *s)
 {
-    
+    while (*s != '\0')
+    {
+        if (!isspace(*s) && !isalnum(*s))
+        {
+            return 0;
+        }    
+        ++s;
+    }
+    return 1;
 }
