@@ -2,9 +2,14 @@
 (The index for this book was sorted with -df for the index category and -n for the page numbers.) 
 
 Thoughts:
-For this we can use tab as the delimiter to split the line into columns.
-Then the arguments can look like this:
--fd 0 -n 1
+For this we can use a comma as the delimiter to split the line into columns.
+Imagine our data is this:
+Sandell,Jamie,1987
+Sandell,Trudi,1987
+Sandell,Bradley,1993
+Foster,Karl,1971
+
+
 
 which would sort the input by a numerical sort by comparing the 2nd column
 then it would sort that output with a case insensitive directory sort by comparing the 1st column
