@@ -4,17 +4,17 @@
 Thoughts:
 For this we can use a comma as the delimiter to split the line into columns.
 Imagine our data is this:
-Sandell,Jamie,1987
-Sandell,Trudi,1987
-Sandell,Bradley,1993
+Sandall,Jamie,1987
+Sandall,Trudi,1987
+Sandall,Bradley,1993
 Sandfall,Timmy,1994
 Foster,Karl,1971
 
 If sorted in descending order by numeric on age, and then ascending order on Surnames should get this:
 Sandfall,Timmy,1994
-Sandell,Bradley,1993
-Sandell,Jamie,1987
-Sandell,Trudi,1987
+Sandall,Bradley,1993
+Sandall,Jamie,1987
+Sandall,Trudi,1987
 Foster,Karl,1971
 
 Usage:
@@ -22,9 +22,9 @@ Usage:
 e.g.
 -nr 3 1
 
-should do this:
-Apply the numeric in reverse (descending) comparison acting on the 3rd field
-then apply the default comparison (case sensitive ASCII comparison) acting on the 1st field (no flags specified, so falls back to the defaults)
+To achieve this, if at least one field has been specified to sort on, then we should just need to compare on the most important field.
+If the comparator returns 0, then no change is required based on sorting on that field (as in the values compared are equal), then we can move on
+to the next most important field (if one was specified) and repeat the procedure until all specified fields to sort on for that line have been processed.
 */
 
 #include <ctype.h>
