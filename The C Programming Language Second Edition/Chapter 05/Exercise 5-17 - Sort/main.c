@@ -7,12 +7,24 @@ Imagine our data is this:
 Sandell,Jamie,1987
 Sandell,Trudi,1987
 Sandell,Bradley,1993
+Sandfall,Timmy,1994
 Foster,Karl,1971
 
+If sorted in descending order by numeric on age, and then ascending order on Surnames should get this:
+Sandfall,Timmy,1994
+Sandell,Bradley,1993
+Sandell,Jamie,1987
+Sandell,Trudi,1987
+Foster,Karl,1971
 
+Usage:
+-flags field_to_apply_to
+e.g.
+-nr 3 1
 
-which would sort the input by a numerical sort by comparing the 2nd column
-then it would sort that output with a case insensitive directory sort by comparing the 1st column
+should do this:
+Apply the numeric in reverse (descending) comparison acting on the 3rd field
+then apply the default comparison (case sensitive ASCII comparison) acting on the 1st field (no flags specified, so falls back to the defaults)
 */
 
 #include <ctype.h>
@@ -60,6 +72,7 @@ int validate_d(const char *s);
 
 int main(int argc, char *argv[])
 {
+    /* Process the arguments, turning on any requested states */
     if (argc > MAX_ARGS)
     {
         printf("Error: Too many arguments, max is %i\n", MAX_ARGS - 1); /* ignore the first arg as that's the program filepath */
@@ -75,7 +88,7 @@ int main(int argc, char *argv[])
     char *line_pointer[MAX_LINES]; /* To store the pointers to our lines that will be in our memory buffer */
     int argc_initial_value = argc; /* cache a copy as we'll be changing argc, as we will need the original value later on */
     int c;
-    /* Process the arguments, turning on any requested states */
+    
     while(--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
     {
         while (c = *++argv[0]) /*   [] binds tighter than ++
