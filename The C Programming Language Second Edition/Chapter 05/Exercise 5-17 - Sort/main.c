@@ -18,9 +18,12 @@ Sandall,Trudi,1987
 Foster,Karl,1971
 
 Usage:
--flags field_to_apply_to
+-t -k<n>ComparisonFlags
 e.g.
--nr 3 1
+-t, -k3nr -k1
+
+says that the delimiter is a comma, that the fields (keys) to sort on is the 3rd field in numeric reverse order and the second field (key)
+to sort on is the 1st field (counting starts from 1) in the default (ASCII ascending)
 
 To achieve this, if at least one field has been specified to sort on, then we should just need to compare on the most important field.
 If the comparator returns 0, then no change is required based on sorting on that field (as in the values compared are equal), then we can move on
