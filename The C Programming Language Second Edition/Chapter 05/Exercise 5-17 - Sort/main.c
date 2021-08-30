@@ -36,6 +36,7 @@ to the next most important field (if one was specified) and repeat the procedure
 #include <string.h>
 
 #define MAX_ARGS 5
+#define MAX_KEYS 4
 #define MAX_LINES 100 /* Max number of lines to read in */
 #define MAX_LINE_SIZE 100 /* including the null terminating character */
 #define MAX_ALLOC_SIZE 10000 /* for the custom memory management */
@@ -50,12 +51,14 @@ static int case_insensitive = 0;
 static int directory = 0;
 static int numeric = 0;
 static int reverse = 0;
+static int keys = 0;
 
 /* Compare and sort */
 void my_qsort(void *v[], int left, int right, int (*compare)(void *a, void *b));
 int directory_order_comp(const char *s1, const char *s2);
 int numcmp(char *s1, char *s2);
 int reverse_cmp(void *a, void *b);
+(int (*)(void *a, void *b)) select_comparison(void);  /* TODO: Fix this so it returns a function pointer */
 int str_case_cmp(const char *s1, const char *s2);
 void str_to_lower(char *s);
 void swap(void *v[], int i, int j);
@@ -91,6 +94,7 @@ int main(int argc, char *argv[])
     char *line_pointer[MAX_LINES]; /* To store the pointers to our lines that will be in our memory buffer */
     int argc_initial_value = argc; /* cache a copy as we'll be changing argc, as we will need the original value later on */
     int c;
+    int number_of_keys = 0;
     
     while(--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
     {
@@ -114,6 +118,10 @@ int main(int argc, char *argv[])
                 case 'f':
                     case_insensitive = 1;
                     break;
+                case 'k':
+                    keys = 1;
+                    number_of_keys++;
+
                 default:
                     printf("Error: %c is an invalid argument\n", c);
                     return -1;
@@ -130,6 +138,7 @@ int main(int argc, char *argv[])
         {
             switch (arguments[i])
             {
+                case 'k':
                 case 'r':
                 case 'f':
                     validation_pointer = NULL;
