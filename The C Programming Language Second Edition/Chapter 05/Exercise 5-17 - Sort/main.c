@@ -58,12 +58,12 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *a, void *b));
 int directory_order_comp(const char *s1, const char *s2);
 int numcmp(char *s1, char *s2);
 int reverse_cmp(void *a, void *b);
-(int (*)(void *a, void *b)) select_comparison(void);  /* TODO: Fix this so it returns a function pointer */
 int str_case_cmp(const char *s1, const char *s2);
-void str_to_lower(char *s);
 void swap(void *v[], int i, int j);
 /* Conversions */
+int partial_str_to_int(const char *s, unsigned int *number);
 int str_to_float(const char *s, float *number);
+void str_to_lower(char *s);
 /* i/o */
 int get_line(char line[], int max_line_size);
 int read_lines(char *line_pointer[], int max_line_size);
@@ -248,6 +248,11 @@ int reverse_cmp(void *a, void *b)
     return base_compare(b, a);
 }
 
+/* Case insensitive.
+    Returns:
+    0 if strings are equal
+    1 if the first non-matching character in s1 has a greater ASCII value than that of s2
+    -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2 */
 int str_case_cmp(const char *s1, const char *s2)
 {
     char t1[MAX_LINE_SIZE];
@@ -259,23 +264,6 @@ int str_case_cmp(const char *s1, const char *s2)
     return strcmp(t1, t2);
 }
 
-/* Converts a string to lower case */
-void str_to_lower(char *s)
-{
-    while(*s != '\0')
-    {
-        *s = tolower(*s);
-        s++;
-    }
-}
-
-/* Case insensitive.
-    Returns:
-    0 if strings are equal
-    1 if the first non-matching character in s1 has a greater ASCII value than that of s2
-    -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2 */
-
-
 /* Swap the ith and jth elements of v[] */
 void swap(void *v[], int i, int j)
 {
@@ -284,6 +272,30 @@ void swap(void *v[], int i, int j)
     temp = v[i];
     v[i] = v[j];
     v[j] = temp;
+}
+
+/* Extracts the first continuous character (ASCII) data that is numerical and converts it to a positive integer
+    e.g. -k12nr would result in 12 being extracted and stored in *number
+    Returns 1 if a number was found, otherwise it returns 0 */
+int partial_str_to_uint(const char *s, unsigned int *number)
+{
+    char temp[100] = {0};
+    unsigned int i = 0;
+    unsigned int number_found = 0;
+    while (*s != '\0')
+    {
+        if (*s >= 48 && *s <= 57)
+        {
+            temp[i++] = *s;
+            number_found = 1;
+        }
+        s++;
+    }
+    if (number_found)
+    {
+        atoi(temp);
+    }
+    return number_found;
 }
 
 /*  Tries to convert *s to a float and store it in *number
@@ -328,6 +340,15 @@ int str_to_float(const char *s, float *number)
     return 1;
 }
 
+/* Converts a string to lower case */
+void str_to_lower(char *s)
+{
+    while(*s != '\0')
+    {
+        *s = tolower(*s);
+        s++;
+    }
+}
 
 /* Stores a line of text in line[] 
     Returns the number of characters read */
