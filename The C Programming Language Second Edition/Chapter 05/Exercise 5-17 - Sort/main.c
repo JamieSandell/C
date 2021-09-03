@@ -47,11 +47,14 @@ static int (*base_compare)(void *, void *);
 static char alloc_buffer[MAX_ALLOC_SIZE];
 static char* alloc_pointer = alloc_buffer;
 /* State */
-static int case_insensitive = 0;
-static int directory = 0;
-static int numeric = 0;
-static int reverse = 0;
-static int keys = 0;
+static int case_insensitive;
+static int directory;
+static int numeric;
+static int reverse;
+static int keys;
+/* Data */
+static char delimiter;
+static unsigned int number_of_keys;
 
 /* Compare and sort */
 void my_qsort(void *v[], int left, int right, int (*compare)(void *a, void *b));
@@ -61,7 +64,7 @@ int reverse_cmp(void *a, void *b);
 int str_case_cmp(const char *s1, const char *s2);
 void swap(void *v[], int i, int j);
 /* Conversions */
-int partial_str_to_int(const char *s, unsigned int *number);
+int partial_str_to_uint(const char *s, unsigned int *number);
 int str_to_float(const char *s, float *number);
 void str_to_lower(char *s);
 /* i/o */
@@ -78,24 +81,20 @@ int validate_d(const char *s);
 
 int main(int argc, char *argv[])
 {
-    /* Process the arguments, turning on any requested states */
+    
     if (argc > MAX_ARGS)
     {
         printf("Error: Too many arguments, max is %i\n", MAX_ARGS - 1); /* ignore the first arg as that's the program filepath */
         return -1;
     }
-    char arguments[MAX_ARGS]; /* Stores the read in arguments for validation later on. \0 == end of arguments */
+    char arguments[MAX_ARGS] = {0}; /* Stores the read in arguments for validation later on. \0 == end of arguments */
     int processed_arg = 0;
-    for (int i = 0; i < MAX_ARGS; ++i)
-    {
-        arguments[i] = '\0';
-    }
 
     char *line_pointer[MAX_LINES]; /* To store the pointers to our lines that will be in our memory buffer */
     int argc_initial_value = argc; /* cache a copy as we'll be changing argc, as we will need the original value later on */
     int c;
-    int number_of_keys = 0;
-    
+    uint key;
+    /* Process the arguments, turning on any requested states */
     while(--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
     {
         while (c = *++argv[0]) /*   [] binds tighter than ++
@@ -118,10 +117,19 @@ int main(int argc, char *argv[])
                 case 'f':
                     case_insensitive = 1;
                     break;
-                case 'k':
+                case 't':
+                    c = *++argv[0];
+                    delimiter = c;
+                    break;
+                case 'k':                                     
+                    if (!partial_str_to_uint(*argv, &key))
+                    {
+                        printf("Error: no number specified for %s\n", *argv[0]);
+                        return -1;
+                    }
                     keys = 1;
                     number_of_keys++;
-
+                    break;
                 default:
                     printf("Error: %c is an invalid argument\n", c);
                     return -1;
@@ -289,11 +297,16 @@ int partial_str_to_uint(const char *s, unsigned int *number)
             temp[i++] = *s;
             number_found = 1;
         }
+        else if (number_found == 1)
+        {
+            /* we want continuous numbers characters, not, e.g. 3n3, we would want 33 */
+            break;
+        }
         s++;
     }
     if (number_found)
     {
-        atoi(temp);
+        *number = atoi(temp);
     }
     return number_found;
 }
