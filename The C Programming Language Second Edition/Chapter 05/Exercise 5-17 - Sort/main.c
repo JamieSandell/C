@@ -36,7 +36,7 @@ to the next most important field (if one was specified) and repeat the procedure
 #include <string.h>
 
 #define MAX_ARGS 5
-#define MAX_KEYS 4
+#define MAX_KEYS (MAX_ARGS - 1)
 #define MAX_LINES 100 /* Max number of lines to read in */
 #define MAX_LINE_SIZE 100 /* including the null terminating character */
 #define MAX_ALLOC_SIZE 10000 /* for the custom memory management */
@@ -51,7 +51,7 @@ static int case_insensitive;
 static int directory;
 static int numeric;
 static int reverse;
-static int keys;
+static int key;
 /* Data */
 static char delimiter;
 static unsigned int number_of_keys;
@@ -62,6 +62,7 @@ int directory_order_comp(const char *s1, const char *s2);
 int numcmp(char *s1, char *s2);
 int reverse_cmp(void *a, void *b);
 int str_case_cmp(const char *s1, const char *s2);
+int str_cmp(const char *s1, const char *s2, int key, const char keys[], char delimiter);
 void swap(void *v[], int i, int j);
 /* Conversions */
 int partial_str_to_uint(const char *s, unsigned int *number);
@@ -93,7 +94,8 @@ int main(int argc, char *argv[])
     char *line_pointer[MAX_LINES]; /* To store the pointers to our lines that will be in our memory buffer */
     int argc_initial_value = argc; /* cache a copy as we'll be changing argc, as we will need the original value later on */
     int c;
-    uint key;
+    uint number;
+    uint keys[MAX_KEYS] = {0};
     /* Process the arguments, turning on any requested states */
     while(--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
     {
@@ -121,14 +123,15 @@ int main(int argc, char *argv[])
                     c = *++argv[0];
                     delimiter = c;
                     break;
-                case 'k':                                     
-                    if (!partial_str_to_uint(*argv, &key))
+                case 'k':         
+                    /* A key/field was specified to sort on, extract the field/column number from it */                            
+                    if (!partial_str_to_uint(*argv, &number))
                     {
                         printf("Error: no number specified for %s\n", *argv[0]);
                         return -1;
                     }
-                    keys = 1;
-                    number_of_keys++;
+                    key = 1;
+                    keys[number_of_keys++] = number;
                     break;
                 default:
                     printf("Error: %c is an invalid argument\n", c);
@@ -179,7 +182,7 @@ int main(int argc, char *argv[])
         {
             if (!numeric)
             {
-                base_compare = (int (*)(void *, void*))(case_insensitive ? str_case_cmp: strcmp);
+                base_compare = (int (*)(void *, void*))(case_insensitive ? str_case_cmp: str_cmp);
             }
             else
             {
@@ -191,6 +194,12 @@ int main(int argc, char *argv[])
         /* Sort with the correct comparison routine and output the result */
         my_qsort((void **)line_pointer, 0, lines_read - 1, compare);
         write_lines((const char**)line_pointer, lines_read);
+        /* Cleanup not strictly necessary as our buffer actually on the stack */
+        char *p = *line_pointer;
+        while(lines_read-- > 0)
+        {
+            afree(*p++);
+        }
         return 0;
     }
 
@@ -227,7 +236,7 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *))
     -1 if s1 has a lesser numerical value than s2 */
 int directory_order_comp(const char *s1, const char *s2)
 {
-    return (case_insensitive ? str_case_cmp(s1, s2) : strcmp(s1, s2));
+    return (case_insensitive ? str_case_cmp(s1, s2) : str_cmp(s1, s2));
 }
 
 /* Returns:
@@ -269,8 +278,40 @@ int str_case_cmp(const char *s1, const char *s2)
     strcpy(t2, s2);
     str_to_lower(t1);
     str_to_lower(t2);
-    return strcmp(t1, t2);
+    return str_cmp(t1, t2);
 }
+
+/*  Case sensitive
+    Returns:
+    0 if strings are equal
+    1 if the first non-matching character in s1 has a greater ASCII value than that of s2
+    -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2
+    If key is non-zero it will sort in order based on the keys passed in.
+    A '\0' in keys indicates the end of the array */
+int str_cmp(const char *s1, const char *s2, int key, const char keys[], char delimiter)
+{
+    if (key)
+    {
+        /* Split the string in to substrings based on the delimiter */
+        char *pch;
+        pch = strtok()
+    }
+    while (*s1 != '\0' && *s2 != '\0')
+    {
+        if (*s1 > *s2)
+        {
+            return 1;
+        }
+        else if (*s1 < *s2)
+        {
+            return -1;
+        }
+        s1++;
+        s2++;
+    }
+    return 0;
+}
+
 
 /* Swap the ith and jth elements of v[] */
 void swap(void *v[], int i, int j)
@@ -316,7 +357,6 @@ int partial_str_to_uint(const char *s, unsigned int *number)
     Returns non-zero if success */
 int str_to_float(const char *s, float *number)
 {
-    /* TODO: Code adapted from GetFloat earlier in chapter 5. Some wasteful operations such as "push back on to the buffer" can be omitted */
     int sign;
     float power;
 
@@ -412,7 +452,7 @@ void write_lines(const char *line_pointer[], int number_of_lines)
     }
 }
 
-
+/* frees the memory, needs to be called in reverse order it was allocated in */
 void afree(char *p)
 {
     if (p >= alloc_buffer && p < alloc_buffer + MAX_ALLOC_SIZE)
