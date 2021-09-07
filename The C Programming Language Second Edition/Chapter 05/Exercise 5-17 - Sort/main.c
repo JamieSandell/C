@@ -58,16 +58,17 @@ static unsigned int number_of_keys;
 
 /* Compare and sort */
 void my_qsort(void *v[], int left, int right, int (*compare)(void *a, void *b));
-int directory_order_comp(const char *s1, const char *s2);
-int numcmp(char *s1, char *s2);
+int directory_order_comp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter);
+int numcmp(char *s1, char *s2, int key, const char keys[], char delimiter);
 int reverse_cmp(void *a, void *b);
-int str_case_cmp(const char *s1, const char *s2);
-int str_cmp(const char *s1, const char *s2, int key, const char keys[], char delimiter);
+int str_case_cmp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter);
+int str_cmp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter);
 void swap(void *v[], int i, int j);
 /* Conversions */
 int partial_str_to_uint(const char *s, unsigned int *number);
 int str_to_float(const char *s, float *number);
 void str_to_lower(char *s);
+char *str_to_substrings(const char *s, const char *delimiter);
 /* i/o */
 int get_line(char line[], int max_line_size);
 int read_lines(char *line_pointer[], int max_line_size);
@@ -198,7 +199,7 @@ int main(int argc, char *argv[])
         char *p = *line_pointer;
         while(lines_read-- > 0)
         {
-            afree(*p++);
+            afree(p++);
         }
         return 0;
     }
@@ -234,9 +235,9 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *))
     0 if strings are equal
     1 if s1 has a greater numerical value than s2
     -1 if s1 has a lesser numerical value than s2 */
-int directory_order_comp(const char *s1, const char *s2)
+int directory_order_comp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter)
 {
-    return (case_insensitive ? str_case_cmp(s1, s2) : str_cmp(s1, s2));
+    return (case_insensitive ? str_case_cmp(s1, s2, key, keys, delimiter) : str_cmp(s1, s2, key, keys, delimiter));
 }
 
 /* Returns:
@@ -244,7 +245,7 @@ int directory_order_comp(const char *s1, const char *s2)
     0 if equal
     1 if the first non-matching character in s1 is greater than that of str2
     -1 if the first non-matching character in s2 is lower than that of str2 */
-int numcmp(char *s1, char *s2)
+int numcmp(char *s1, char *s2, int key, const char keys[], char delimiter)
 {
     double d1 = atof(s1);
     double d2 = atof(s2);
@@ -270,7 +271,7 @@ int reverse_cmp(void *a, void *b)
     0 if strings are equal
     1 if the first non-matching character in s1 has a greater ASCII value than that of s2
     -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2 */
-int str_case_cmp(const char *s1, const char *s2)
+int str_case_cmp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter)
 {
     char t1[MAX_LINE_SIZE];
     char t2[MAX_LINE_SIZE];
@@ -278,7 +279,7 @@ int str_case_cmp(const char *s1, const char *s2)
     strcpy(t2, s2);
     str_to_lower(t1);
     str_to_lower(t2);
-    return str_cmp(t1, t2);
+    return str_cmp(t1, t2, key, keys, delimiter);
 }
 
 /*  Case sensitive
@@ -288,13 +289,12 @@ int str_case_cmp(const char *s1, const char *s2)
     -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2
     If key is non-zero it will sort in order based on the keys passed in.
     A '\0' in keys indicates the end of the array */
-int str_cmp(const char *s1, const char *s2, int key, const char keys[], char delimiter)
+int str_cmp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter)
 {
     if (key)
     {
         /* Split the string in to substrings based on the delimiter */
         char *pch;
-        pch = strtok()
     }
     while (*s1 != '\0' && *s2 != '\0')
     {
@@ -401,6 +401,20 @@ void str_to_lower(char *s)
         *s = tolower(*s);
         s++;
     }
+}
+
+/* Calls strtok with a copy of the passed in str */
+char *str_to_substrings(const char *s, const char *delimiter)
+{
+    static char buffer[MAX_LINE_SIZE * 2];
+
+    if (s != NULL)
+    {
+        /* reset */
+        strcpy(buffer, s);
+    }
+
+    return strtok(buffer, delimiter);
 }
 
 /* Stores a line of text in line[] 
