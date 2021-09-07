@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
     char *line_pointer[MAX_LINES]; /* To store the pointers to our lines that will be in our memory buffer */
     int argc_initial_value = argc; /* cache a copy as we'll be changing argc, as we will need the original value later on */
     int c;
-    uint number;
-    uint keys[MAX_KEYS] = {0};
+    unsigned int number;
+    unsigned int keys[MAX_KEYS] = {0};
     /* Process the arguments, turning on any requested states */
     while(--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
     {
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
                     /* A key/field was specified to sort on, extract the field/column number from it */                            
                     if (!partial_str_to_uint(*argv, &number))
                     {
-                        printf("Error: no number specified for %s\n", *argv[0]);
+                        printf("Error: no number specified for %s\n", argv[0]);
                         return -1;
                     }
                     key = 1;
@@ -291,10 +291,17 @@ int str_case_cmp(const char *s1, const char *s2, int key, const char keys[], con
     A '\0' in keys indicates the end of the array */
 int str_cmp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter)
 {
-    if (key)
+    if (key) /* At least one key/column/field specified to sort on */
     {
-        /* Split the string in to substrings based on the delimiter */
-        char *pch;
+        unsigned int i = 0;
+        unsigned int key_to_sort_on;
+        char *substring;
+        while (keys[i] != '\0') /* Loop through our collection of keys */
+        {
+            key_to_sort_on = keys[i] - 1; /* the first key/column starts at 1, however the code counts from 0 so need to offset this. */
+            substring = str_to_substrings(s1, delimiter); /* get the first substring */
+            ++i;
+        }
     }
     while (*s1 != '\0' && *s2 != '\0')
     {
