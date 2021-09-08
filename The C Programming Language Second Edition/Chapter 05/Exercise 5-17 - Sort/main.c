@@ -293,14 +293,17 @@ int str_cmp(const char *s1, const char *s2, int key, const char keys[], const ch
 {
     if (key) /* At least one key/column/field specified to sort on */
     {
-        unsigned int i = 0;
+        unsigned int keys_index = 0;
         unsigned int key_to_sort_on;
         char *substring;
-        while (keys[i] != '\0') /* Loop through our collection of keys */
+        char s1_substring[MAX_LINE_SIZE];
+        char s2_substring[MAX_LINE_SIZE];
+        while (keys[keys_index] != '\0') /* Loop through our collection of keys */
         {
-            key_to_sort_on = keys[i] - 1; /* the first key/column starts at 1, however the code counts from 0 so need to offset this. */
-            substring = str_to_substrings(s1, delimiter); /* get the first substring */
-            ++i;
+            key_to_sort_on = keys[keys_index] - 1; /* the first key/column starts at 1, however the code counts from 0 so need to offset this. */
+            s1_substring = get_substring(s1, substring_index);
+            s2_substring = get_substring(s2, substring_index)
+            ++keys_index;
         }
     }
     while (*s1 != '\0' && *s2 != '\0')
