@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
                     validation_pointer = validate_d;
                     break;
                 default:
+                    /* TODO: fix this for 't' and a numeric character */
                     printf("Warning: no validation case for argument %c\n", arguments[i]);
                     break;
             }
@@ -201,7 +202,7 @@ int main(int argc, char *argv[])
         int (*compare)(void *, void *, unsigned int, const char [], const char *) = (int (*)(void *, void *, unsigned int, const char [], const char *))(reverse ? reverse_cmp: base_compare);
         /* Sort with the correct comparison routine and output the result */
         my_qsort((void **)line_pointer, 0, lines_read - 1, compare,
-                    key, (const *)keys, delimiter);
+                    key, (const char *)keys, delimiter);
         write_lines((const char**)line_pointer, lines_read);
         /* Cleanup not strictly necessary as our buffer actually on the stack */
         char *p = *line_pointer;
@@ -447,9 +448,10 @@ char *str_to_substrings(const char *s, const char *delimiter)
     {
         /* reset */
         strcpy(buffer, s);
+        return strtok(buffer, delimiter);
     }
 
-    return strtok(buffer, delimiter);
+    return strtok(NULL, delimiter);
 }
 
 /* Stores a line of text in line[] 
@@ -472,10 +474,10 @@ int get_line(char line[], int max_line_size)
 
 void get_substring(const char *s, const char *delimiter, unsigned int substring_index, char *substring)
 {
-    substring = str_to_substrings(s, delimiter);
-    for (unsigned int i = 1; i < substring_index; ++i)
+    strcpy(substring, str_to_substrings(s, delimiter));
+    for (unsigned int i = 0; i < substring_index; ++i)
     {
-        substring = str_to_substrings(NULL, delimiter);
+        strcpy(substring, str_to_substrings(s, delimiter));
     }
 }
 
