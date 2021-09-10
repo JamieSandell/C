@@ -42,7 +42,7 @@ to the next most important field (if one was specified) and repeat the procedure
 #define MAX_ALLOC_SIZE 10000 /* for the custom memory management */
 
 /* Function pointers */
-static int (*base_compare)(void *, void *);
+static int (*base_compare)(void *, void *, unsigned int, const char [], const char *);
 /* Memory */
 static char alloc_buffer[MAX_ALLOC_SIZE];
 static char* alloc_pointer = alloc_buffer;
@@ -51,18 +51,19 @@ static int case_insensitive;
 static int directory;
 static int numeric;
 static int reverse;
-static int key;
+static unsigned int key;
 /* Data */
-static char delimiter;
+static char delimiter[1];
 static unsigned int number_of_keys;
 
 /* Compare and sort */
-void my_qsort(void *v[], int left, int right, int (*compare)(void *a, void *b));
-int directory_order_comp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter);
-int numcmp(char *s1, char *s2, int key, const char keys[], char delimiter);
-int reverse_cmp(void *a, void *b);
-int str_case_cmp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter);
-int str_cmp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter);
+void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *, unsigned int, const char [], const char *),
+    unsigned int key, const char keys[], const char *delimiter);
+int directory_order_comp(const char *s1, const char *s2, unsigned int key, const char keys[], const char *delimiter);
+int numcmp(char *s1, char *s2, unsigned int key, const char keys[], const char *delimiter);
+int reverse_cmp(void *a, void *b, unsigned int key, const char keys[], const char *delimiter);
+int str_case_cmp(const char *s1, const char *s2, unsigned int key, const char keys[], const char *delimiter);
+int str_cmp(const char *s1, const char *s2, unsigned int key, const char keys[], const char *delimiter);
 void swap(void *v[], int i, int j);
 /* Conversions */
 int partial_str_to_uint(const char *s, unsigned int *number);
@@ -71,6 +72,7 @@ void str_to_lower(char *s);
 char *str_to_substrings(const char *s, const char *delimiter);
 /* i/o */
 int get_line(char line[], int max_line_size);
+void get_substring(const char *s, const char *delimiter, unsigned int substring_index, char *substring);
 int read_lines(char *line_pointer[], int max_line_size);
 void write_lines(const char *line_pointer[], int number_of_lines);
 /* Memory */
@@ -122,7 +124,7 @@ int main(int argc, char *argv[])
                     break;
                 case 't':
                     c = *++argv[0];
-                    delimiter = c;
+                    delimiter[0] = c;
                     break;
                 case 'k':         
                     /* A key/field was specified to sort on, extract the field/column number from it */                            
@@ -135,6 +137,11 @@ int main(int argc, char *argv[])
                     keys[number_of_keys++] = number;
                     break;
                 default:
+                    /* TODO: Better error handling */
+                    if ((partial_str_to_uint(*argv, &number)) && key)
+                    {
+                        break;
+                    }
                     printf("Error: %c is an invalid argument\n", c);
                     return -1;
             }
@@ -177,23 +184,24 @@ int main(int argc, char *argv[])
         /* Point to the correct comparison function */
         if (directory)
         {
-            base_compare = (int (*)(void *, void *))(directory_order_comp); /* only needs to work with -f (case insensitive flag) */
+            base_compare = (int (*)(void *, void *, unsigned int, const char [], const char *))(directory_order_comp); /* only needs to work with -f (case insensitive flag) */
         }
         else
         {
             if (!numeric)
             {
-                base_compare = (int (*)(void *, void*))(case_insensitive ? str_case_cmp: str_cmp);
+                base_compare = (int (*)(void *, void *, unsigned int, const char [], const char *))(case_insensitive ? str_case_cmp: str_cmp);
             }
             else
             {
-                base_compare = (int (*)(void *, void*))numcmp;
+                base_compare = (int (*)(void *, void *, unsigned int, const char [], const char *))numcmp;
             }
         }
         /* Do we need to reverse the comparison? */
-        int (*compare)(void *, void *) = (int (*)(void *, void*))(reverse ? reverse_cmp: base_compare);
+        int (*compare)(void *, void *, unsigned int, const char [], const char *) = (int (*)(void *, void *, unsigned int, const char [], const char *))(reverse ? reverse_cmp: base_compare);
         /* Sort with the correct comparison routine and output the result */
-        my_qsort((void **)line_pointer, 0, lines_read - 1, compare);
+        my_qsort((void **)line_pointer, 0, lines_read - 1, compare,
+                    key, (const *)keys, delimiter);
         write_lines((const char**)line_pointer, lines_read);
         /* Cleanup not strictly necessary as our buffer actually on the stack */
         char *p = *line_pointer;
@@ -208,7 +216,8 @@ int main(int argc, char *argv[])
     return -1;
 }
 
-void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *))
+void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *, unsigned int, const char [], const char *),
+    unsigned int key, const char keys[], const char *delimiter)
 {
     if (left >= right) /* do nothing if array contains fewer than two elements */
     {
@@ -220,14 +229,14 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *))
     last = left;
     for (i = left + 1; i <= right; i++)
     {
-        if ((*compare)(v[i], v[left]) < 0)
+        if ((*compare)(v[i], v[left], key, keys, delimiter) < 0)
         {
             swap(v, ++last, i);
         }
     }
     swap(v, left, last);
-    my_qsort(v, left, last -  1, compare);
-    my_qsort(v, last + 1, right, compare);
+    my_qsort(v, left, last -  1, compare, key, keys, delimiter);
+    my_qsort(v, last + 1, right, compare, key, keys, delimiter);
 }
 
 /* Which makes comparisons only on letters, numbers and blanks.
@@ -235,7 +244,7 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *))
     0 if strings are equal
     1 if s1 has a greater numerical value than s2
     -1 if s1 has a lesser numerical value than s2 */
-int directory_order_comp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter)
+int directory_order_comp(const char *s1, const char *s2, unsigned int key, const char keys[], const char *delimiter)
 {
     return (case_insensitive ? str_case_cmp(s1, s2, key, keys, delimiter) : str_cmp(s1, s2, key, keys, delimiter));
 }
@@ -245,7 +254,7 @@ int directory_order_comp(const char *s1, const char *s2, int key, const char key
     0 if equal
     1 if the first non-matching character in s1 is greater than that of str2
     -1 if the first non-matching character in s2 is lower than that of str2 */
-int numcmp(char *s1, char *s2, int key, const char keys[], char delimiter)
+int numcmp(char *s1, char *s2, unsigned int key, const char keys[], const char *delimiter)
 {
     double d1 = atof(s1);
     double d2 = atof(s2);
@@ -261,9 +270,9 @@ int numcmp(char *s1, char *s2, int key, const char keys[], char delimiter)
     return -1;
 }
 
-int reverse_cmp(void *a, void *b)
+int reverse_cmp(void *a, void *b, unsigned int key, const char keys[], const char *delimiter)
 {
-    return base_compare(b, a);
+    return base_compare(b, a, key, keys, delimiter);
 }
 
 /* Case insensitive.
@@ -271,7 +280,7 @@ int reverse_cmp(void *a, void *b)
     0 if strings are equal
     1 if the first non-matching character in s1 has a greater ASCII value than that of s2
     -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2 */
-int str_case_cmp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter)
+int str_case_cmp(const char *s1, const char *s2, unsigned int key, const char keys[], const char *delimiter)
 {
     char t1[MAX_LINE_SIZE];
     char t2[MAX_LINE_SIZE];
@@ -289,7 +298,7 @@ int str_case_cmp(const char *s1, const char *s2, int key, const char keys[], con
     -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2
     If key is non-zero it will sort in order based on the keys passed in.
     A '\0' in keys indicates the end of the array */
-int str_cmp(const char *s1, const char *s2, int key, const char keys[], const char *delimiter)
+int str_cmp(const char *s1, const char *s2, unsigned int key, const char keys[], const char *delimiter)
 {
     if (key) /* At least one key/column/field specified to sort on */
     {
@@ -297,12 +306,28 @@ int str_cmp(const char *s1, const char *s2, int key, const char keys[], const ch
         unsigned int key_to_sort_on;
         char *substring;
         char s1_substring[MAX_LINE_SIZE];
+        unsigned int s1_substring_index = 0;
+        unsigned int s2_substring_index = 0;
         char s2_substring[MAX_LINE_SIZE];
         while (keys[keys_index] != '\0') /* Loop through our collection of keys */
         {
             key_to_sort_on = keys[keys_index] - 1; /* the first key/column starts at 1, however the code counts from 0 so need to offset this. */
-            s1_substring = get_substring(s1, substring_index);
-            s2_substring = get_substring(s2, substring_index)
+            /* Get the strings for that key from the two strings and then compare them */
+            get_substring(s1, delimiter, key_to_sort_on, s1_substring);
+            get_substring(s2, delimiter, key_to_sort_on, s2_substring);
+            while (s1_substring[s1_substring_index] != '\0' && s2_substring[s2_substring_index] != '\0')
+            {
+                if (s1_substring[s1_substring_index] > s2_substring[s2_substring_index])
+                {
+                    return 1;
+                }
+                else if (s1_substring[s1_substring_index] < s2_substring[s2_substring_index])
+                {
+                    return -1;
+                }
+                ++s1_substring_index;
+                ++s2_substring_index;
+            }
             ++keys_index;
         }
     }
@@ -443,6 +468,15 @@ int get_line(char line[], int max_line_size)
     }
     line[char_count] = '\0';
     return char_count;
+}
+
+void get_substring(const char *s, const char *delimiter, unsigned int substring_index, char *substring)
+{
+    substring = str_to_substrings(s, delimiter);
+    for (unsigned int i = 1; i < substring_index; ++i)
+    {
+        substring = str_to_substrings(NULL, delimiter);
+    }
 }
 
 /* Stores lines in an internal memory buffer and stores pointers to them in line_pointer
