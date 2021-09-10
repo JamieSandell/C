@@ -35,7 +35,7 @@ to the next most important field (if one was specified) and repeat the procedure
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_ARGS 5
+#define MAX_ARGS 100
 #define MAX_KEYS (MAX_ARGS - 1)
 #define MAX_LINES 100 /* Max number of lines to read in */
 #define MAX_LINE_SIZE 100 /* including the null terminating character */
