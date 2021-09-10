@@ -257,18 +257,52 @@ int directory_order_comp(const char *s1, const char *s2, unsigned int key, const
     -1 if the first non-matching character in s2 is lower than that of str2 */
 int numcmp(char *s1, char *s2, unsigned int key, const char keys[], const char *delimiter)
 {
-    double d1 = atof(s1);
-    double d2 = atof(s2);
-
-    if (d1 == d2)
+    double d1;
+    double d2;
+    if (key)
     {
+        unsigned int keys_index = 0;
+        unsigned int key_to_sort_on;
+        char *substring;
+        char s1_substring[MAX_LINE_SIZE];
+        unsigned int s1_substring_index = 0;
+        unsigned int s2_substring_index = 0;
+        char s2_substring[MAX_LINE_SIZE];
+        while (keys[keys_index] != '\0') /* Loop through our collection of keys */
+        {
+            key_to_sort_on = keys[keys_index] - 1; /* the first key/column starts at 1, however the code counts from 0 so need to offset this. */
+            /* Get the strings for that key from the two strings and then compare them */
+            get_substring(s1, delimiter, key_to_sort_on, s1_substring);
+            get_substring(s2, delimiter, key_to_sort_on, s2_substring);
+            d1 = atof(s1_substring);
+            d2 = atof(s2_substring);
+            if (d1 < d2)
+            {
+                return -1;
+            }
+            else if(d1 > d2)
+            {
+                return 1;
+            }
+            ++keys_index;
+        }
         return 0;
     }
-    else if(d1 > d2)
+    else
     {
-        return 1;
+        d1 = atof(s1);
+        d2 = atof(s2);
+
+        if (d1 == d2)
+        {
+            return 0;
+        }
+        else if(d1 > d2)
+        {
+            return 1;
+        }
+        return -1;
     }
-    return -1;
 }
 
 int reverse_cmp(void *a, void *b, unsigned int key, const char keys[], const char *delimiter)
@@ -331,21 +365,25 @@ int str_cmp(const char *s1, const char *s2, unsigned int key, const char keys[],
             }
             ++keys_index;
         }
+        return 0;
     }
-    while (*s1 != '\0' && *s2 != '\0')
+    else
     {
-        if (*s1 > *s2)
+        while (*s1 != '\0' && *s2 != '\0')
         {
-            return 1;
+            if (*s1 > *s2)
+            {
+                return 1;
+            }
+            else if (*s1 < *s2)
+            {
+                return -1;
+            }
+            s1++;
+            s2++;
         }
-        else if (*s1 < *s2)
-        {
-            return -1;
-        }
-        s1++;
-        s2++;
-    }
-    return 0;
+        return 0;
+    }    
 }
 
 
@@ -477,7 +515,7 @@ void get_substring(const char *s, const char *delimiter, unsigned int substring_
     strcpy(substring, str_to_substrings(s, delimiter));
     for (unsigned int i = 0; i < substring_index; ++i)
     {
-        strcpy(substring, str_to_substrings(s, delimiter));
+        strcpy(substring, str_to_substrings(NULL, delimiter));
     }
 }
 
