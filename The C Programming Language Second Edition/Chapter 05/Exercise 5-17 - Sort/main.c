@@ -230,10 +230,23 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *, uns
     last = left;
     for (i = left + 1; i <= right; i++)
     {
-        if ((*compare)(v[i], v[left], key, keys, delimiter) < 0)
+        /*
+        If key
+            sort on the key with the set options for that key
+        else
+            sort on the full line with the set options
+         */
+        if (key)
         {
-            swap(v, ++last, i);
+
         }
+        else
+        {
+            if ((*compare)(v[i], v[left], key, keys, delimiter) < 0)
+            {
+                swap(v, ++last, i);
+            }
+        }        
     }
     swap(v, left, last);
     my_qsort(v, left, last -  1, compare, key, keys, delimiter);
