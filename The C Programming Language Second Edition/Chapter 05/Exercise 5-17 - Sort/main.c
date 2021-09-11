@@ -55,10 +55,12 @@ static unsigned int key;
 /* Data */
 static char delimiter[1];
 static unsigned int number_of_keys;
+static unsigned int argument_count;
+static char **argument_vector;
 
 /* Compare and sort */
 void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *),
-    unsigned int key, const char keys[], const char *delimiter);
+    unsigned int key, const char keys[], const char *delimiter, char **argv);
 int directory_order_comp(const char *s1, const char *s2);
 int numcmp(char *s1, char *s2);
 int reverse_cmp(void *a, void *b);
@@ -73,6 +75,7 @@ char *str_to_substrings(const char *s, const char *delimiter);
 /* i/o */
 int get_line(char line[], int max_line_size);
 void get_substring(const char *s, const char *delimiter, unsigned int substring_index, char *substring);
+int process_arguments(char **argv, unsigned int argc, int keys[]);
 int read_lines(char *line_pointer[], int max_line_size);
 void write_lines(const char *line_pointer[], int number_of_lines);
 /* Memory */
@@ -84,74 +87,32 @@ int validate_n(const char *s);
 int validate_d(const char *s);
 
 int main(int argc, char *argv[])
-{
-    
+{    
     if (argc > MAX_ARGS)
     {
-        printf("Error: Too many arguments, max is %i\n", MAX_ARGS - 1); /* ignore the first arg as that's the program filepath */
+        printf("Error: Too many arguments, max is %i\n", MAX_ARGS - 1);
         return -1;
     }
     char arguments[MAX_ARGS] = {0}; /* Stores the read in arguments for validation later on. \0 == end of arguments */
     int processed_arg = 0;
 
     char *line_pointer[MAX_LINES]; /* To store the pointers to our lines that will be in our memory buffer */
-    int argc_initial_value = argc; /* cache a copy as we'll be changing argc, as we will need the original value later on */
+    int argc_initial_value = argc; /* cache a copy as we'll be changing argc and we will need the original value later on */
+    argument_vector = argv;
     int c;
     unsigned int number;
     unsigned int keys[MAX_KEYS] = {0};
-    /* Process the arguments, turning on any requested states */
-    while(--argc > 0 && (*++argv)[0] == '-') /* skip the program path argument, then check if the first char of the arg is what we expect */
+    if (!process_arguments(++argv, argc, keys))
     {
-        while (c = *++argv[0]) /*   [] binds tighter than ++
-                                    argv gives us the memory address of the first array (char string), [0] gives us the address of the first element of that
-                                    ++ increment/walk along that array to get the address of that character / skipping the first character ('-')
-                                    * dereference it to get the value/character */
-        {
-            arguments[processed_arg++] = c;
-            switch (c)
-            {
-                case 'r':
-                    reverse = 1;
-                    break;
-                case 'n':
-                    numeric = 1;
-                    break;
-                case 'd':
-                    directory = 1;
-                    break;
-                case 'f':
-                    case_insensitive = 1;
-                    break;
-                case 't':
-                    c = *++argv[0];
-                    delimiter[0] = c;
-                    break;
-                case 'k':         
-                    /* A key/field was specified to sort on, extract the field/column number from it */                            
-                    if (!partial_str_to_uint(*argv, &number))
-                    {
-                        printf("Error: no number specified for %s\n", argv[0]);
-                        return -1;
-                    }
-                    key = 1;
-                    keys[number_of_keys++] = number;
-                    break;
-                default:
-                    /* TODO: Better error handling */
-                    if ((partial_str_to_uint(*argv, &number)) && key)
-                    {
-                        break;
-                    }
-                    printf("Error: %c is an invalid argument\n", c);
-                    return -1;
-            }
-        }
+        return -1;
     }
+
     /* Get the input */
     int lines_read = 0;
     if ((lines_read = read_lines(line_pointer, MAX_LINE_SIZE)) > 0)
     {
         /* Validate the input */
+        /* TODO: Rewrite the validation so it works with argv/argument_vector */
         int (*validation_pointer)(const char *) = NULL; /* Function pointer to a validation function */
         for (int i = 0; arguments[i] != '\0'; ++i)
         {
@@ -218,7 +179,7 @@ int main(int argc, char *argv[])
 }
 
 void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *),
-    unsigned int key, const char keys[], const char *delimiter)
+    unsigned int key, const char keys[], const char *delimiter, char **argv)
 {
     if (left >= right) /* do nothing if array contains fewer than two elements */
     {
@@ -238,7 +199,13 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *),
          */
         if (key)
         {
-            /*argv*/
+            unsigned int keys_index = 0;
+            while (keys[keys_index] != '\0')
+            {
+                process_arguments(argv[keys_index], 1)
+                ++keys_index;
+            }
+            
         }
         else
         {
@@ -524,6 +491,62 @@ void get_substring(const char *s, const char *delimiter, unsigned int substring_
     {
         strcpy(substring, str_to_substrings(NULL, delimiter));
     }
+}
+
+/* Returns 0 if an error, non-zero if success
+    Sets the comparison states based on the arguments passed in */
+int process_arguments(char **argv, unsigned int argc, int keys[])
+{
+    int c;
+    unsigned int number;
+
+    while(--argc > 0 && (*argv++)[0] == '-')
+    {
+        while (c = *++argv[0]) /*   [] binds tighter than ++
+                                    argv gives us the memory address of the first array (char string), [0] gives us the address of the first element of that
+                                    ++ increment/walk along that array to get the address of that character / skipping the first character ('-')
+                                    * dereference it to get the value/character */
+        {
+            switch (c)
+            {
+                case 'r':
+                    reverse = 1;
+                    break;
+                case 'n':
+                    numeric = 1;
+                    break;
+                case 'd':
+                    directory = 1;
+                    break;
+                case 'f':
+                    case_insensitive = 1;
+                    break;
+                case 't':
+                    c = *++argv[0];
+                    delimiter[0] = c;
+                    break;
+                case 'k':         
+                    /* A key/field was specified to sort on, extract the field/column number from it */                            
+                    if (!partial_str_to_uint(*argv, &number))
+                    {
+                        printf("Error: no number specified for %s\n", argv[0]);
+                        return 0;
+                    }
+                    key = 1;
+                    keys[number_of_keys++] = number;
+                    break;
+                default:
+                    /* TODO: Better error handling */
+                    if ((partial_str_to_uint(*argv, &number)) && key)
+                    {
+                        break;
+                    }
+                    printf("Error: %c is an invalid argument\n", c);
+                    return 0;
+            }
+        }
+    }
+    return 1;
 }
 
 /* Stores lines in an internal memory buffer and stores pointers to them in line_pointer
