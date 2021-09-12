@@ -75,9 +75,12 @@ char *str_to_substrings(const char *s, const char *delimiter);
 /* i/o */
 int get_line(char line[], int max_line_size);
 void get_substring(const char *s, const char *delimiter, unsigned int substring_index, char *substring);
-int process_arguments(char **argv, unsigned int argc, int keys[]);
+int process_arguments(char **argv, unsigned int argc, unsigned int keys[], char *line_comparison_flag_pointer[], unsigned int *line_comparison_flags_read);
 int read_lines(char *line_pointer[], int max_line_size);
 void write_lines(const char *line_pointer[], int number_of_lines);
+/* Logic */
+void reset_comparison_flags(void);
+unsigned int set_comparison_flag(int c);
 /* Memory */
 void afree(char *p);
 char *alloc(int size);
@@ -97,12 +100,14 @@ int main(int argc, char *argv[])
     int processed_arg = 0;
 
     char *line_pointer[MAX_LINES]; /* To store the pointers to our lines that will be in our memory buffer */
+    char *line_comparison_flag_pointer[MAX_KEYS]; /* To store the pointers to our lines of comparison flags that will be in our memory buffer */
     int argc_initial_value = argc; /* cache a copy as we'll be changing argc and we will need the original value later on */
     argument_vector = argv;
     int c;
     unsigned int number;
     unsigned int keys[MAX_KEYS] = {0};
-    if (!process_arguments(++argv, argc, keys))
+    unsigned int line_comparison_flags_read;
+    if (!process_arguments(++argv, argc, keys, line_comparison_flag_pointer, &line_comparison_flags_read))
     {
         return -1;
     }
@@ -163,10 +168,15 @@ int main(int argc, char *argv[])
         int (*compare)(void *, void *) = (int (*)(void *, void *))(reverse ? reverse_cmp: base_compare);
         /* Sort with the correct comparison routine and output the result */
         my_qsort((void **)line_pointer, 0, lines_read - 1, compare,
-                    key, (const char *)keys, delimiter);
+                    key, (const char *)keys, delimiter, argv);
         write_lines((const char**)line_pointer, lines_read);
-        /* Cleanup not strictly necessary as our buffer actually on the stack */
-        char *p = *line_pointer;
+        /* Cleanup not strictly necessary as our buffer is actually on the stack */
+        char *p = *line_comparison_flag_pointer;
+        while (line_comparison_flags_read-- > 0)
+        {
+            afree(p++);
+        }
+        p = *line_pointer;
         while(lines_read-- > 0)
         {
             afree(p++);
@@ -202,8 +212,7 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *),
             unsigned int keys_index = 0;
             while (keys[keys_index] != '\0')
             {
-                process_arguments(argv[keys_index], 1)
-                ++keys_index;
+
             }
             
         }
@@ -216,8 +225,8 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *),
         }        
     }
     swap(v, left, last);
-    my_qsort(v, left, last -  1, compare, key, keys, delimiter);
-    my_qsort(v, last + 1, right, compare, key, keys, delimiter);
+    my_qsort(v, left, last -  1, compare, key, keys, delimiter, argv);
+    my_qsort(v, last + 1, right, compare, key, keys, delimiter, argv);
 }
 
 /* Which makes comparisons only on letters, numbers and blanks.
@@ -495,12 +504,15 @@ void get_substring(const char *s, const char *delimiter, unsigned int substring_
 
 /* Returns 0 if an error, non-zero if success
     Sets the comparison states based on the arguments passed in */
-int process_arguments(char **argv, unsigned int argc, int keys[])
+int process_arguments(char **argv, unsigned int argc, unsigned int keys[], char *line_comparison_flag_pointer[], unsigned int *line_comparison_flags_read)
 {
     int c;
     unsigned int number;
+    unsigned int comparison_char_count = 0;
+    char comparison_flag[MAX_KEYS];
+    char *p;
 
-    while(--argc > 0 && (*argv++)[0] == '-')
+    while(--argc > 0 && (*argv)[0] == '-')
     {
         while (c = *++argv[0]) /*   [] binds tighter than ++
                                     argv gives us the memory address of the first array (char string), [0] gives us the address of the first element of that
@@ -509,18 +521,6 @@ int process_arguments(char **argv, unsigned int argc, int keys[])
         {
             switch (c)
             {
-                case 'r':
-                    reverse = 1;
-                    break;
-                case 'n':
-                    numeric = 1;
-                    break;
-                case 'd':
-                    directory = 1;
-                    break;
-                case 'f':
-                    case_insensitive = 1;
-                    break;
                 case 't':
                     c = *++argv[0];
                     delimiter[0] = c;
@@ -536,6 +536,11 @@ int process_arguments(char **argv, unsigned int argc, int keys[])
                     keys[number_of_keys++] = number;
                     break;
                 default:
+                    if (set_comparison_flag(c))
+                    {
+                        comparison_flag[comparison_char_count++] = c;
+                        break;
+                    }
                     /* TODO: Better error handling */
                     if ((partial_str_to_uint(*argv, &number)) && key)
                     {
@@ -545,6 +550,18 @@ int process_arguments(char **argv, unsigned int argc, int keys[])
                     return 0;
             }
         }
+        if (comparison_char_count)
+        {
+            if (comparison_char_count >= MAX_KEYS || (p = alloc(comparison_char_count)) == NULL) /* Request memory for our line of comparison flags */
+            {
+                printf("Error: Out of memory, or comparison flag lines read in exeeded MAX_KEYS.\n");
+                return 0;
+            }
+            strcpy(p, comparison_flag); /* Copy our read in line of comparison flags to the memory address within our memory buffer that p points to */
+            line_comparison_flag_pointer[(*line_comparison_flags_read)++] = p; /* Add that pointer to our array of pointers */
+            comparison_char_count = 0; /* reset for the next line of comparison flags */
+        }
+        ++argv;
     }
     return 1;
 }
@@ -562,11 +579,11 @@ int read_lines(char *line_pointer[], int max_line_size)
     {
         if (number_of_lines_read >= MAX_LINES || (p = alloc(count)) == NULL)
         {
-            printf("Error: Out of memory, or lines read in exceeded max_line_size.\n");
+            printf("Error: Out of memory, or lines read in exceeded MAX_LINES.\n");
             return -1;
         }
         line[count - 1] = '\0'; /* Delete the new line character */
-        strcpy(p, line); /* Copy what we read in, to the memory address within out memory buffer that p points to */
+        strcpy(p, line); /* Copy what we read in, to the memory address within our memory buffer that p points to */
         line_pointer[number_of_lines_read++] = p; /* Add that pointer to our array of pointers */
     }
     return number_of_lines_read;
@@ -578,6 +595,37 @@ void write_lines(const char *line_pointer[], int number_of_lines)
     {
         printf("%s\n", *line_pointer++);
     }
+}
+
+void reset_comparison_flags(void)
+{
+    case_insensitive = 0;
+    directory = 0;
+    numeric = 0;
+    reverse = 0;
+}
+
+/* Set a comparison flag based on the input passed in
+    Returns 1 if successfull, 0 if unsuccessful */
+unsigned int set_comparison_flag(int c)
+{
+    switch (c)
+        {
+            case 'r':
+                reverse = 1;
+                return 1;
+            case 'n':
+                numeric = 1;
+                return 1;
+            case 'd':
+                directory = 1;
+                return 1;
+            case 'f':
+                case_insensitive = 1;
+                return 1;
+            default:
+                return 0;
+        }
 }
 
 /* frees the memory, needs to be called in reverse order it was allocated in */
