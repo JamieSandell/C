@@ -43,6 +43,7 @@ to the next most important field (if one was specified) and repeat the procedure
 
 /* Function pointers */
 static int (*base_compare)(void *, void *);
+static int (*compare)(void *, void *);
 /* Memory */
 static char alloc_buffer[MAX_ALLOC_SIZE];
 static char* alloc_pointer = alloc_buffer;
@@ -59,8 +60,8 @@ static unsigned int argument_count;
 static char **argument_vector;
 
 /* Compare and sort */
-void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *),
-    unsigned int key, const char keys[], const char *delimiter, char **argv);
+void my_qsort(void *v[], int left, int right,
+    unsigned int key, const char keys[], const char *delimiter, char **line_of_comparison_flags, unsigned int line_of_comparison_flags_count);
 int directory_order_comp(const char *s1, const char *s2);
 int numcmp(char *s1, char *s2);
 int reverse_cmp(void *a, void *b);
@@ -80,10 +81,12 @@ int read_lines(char *line_pointer[], int max_line_size);
 void write_lines(const char *line_pointer[], int number_of_lines);
 /* Logic */
 void reset_comparison_flags(void);
+void set_comparator_function_pointer(void);
 unsigned int set_comparison_flag(int c);
 /* Memory */
 void afree(char *p);
 char *alloc(int size);
+void reset_char_array(char array[], unsigned int number_of_elements);
 /* Validation */
 int validate_input(const char *v[], int (*validation)(const char *), int number_of_lines);
 int validate_n(const char *s);
@@ -148,27 +151,9 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        /* Point to the correct comparison function */
-        if (directory)
-        {
-            base_compare = (int (*)(void *, void *))(directory_order_comp); /* only needs to work with -f (case insensitive flag) */
-        }
-        else
-        {
-            if (!numeric)
-            {
-                base_compare = (int (*)(void *, void *))(case_insensitive ? str_case_cmp: str_cmp);
-            }
-            else
-            {
-                base_compare = (int (*)(void *, void *))numcmp;
-            }
-        }
-        /* Do we need to reverse the comparison? */
-        int (*compare)(void *, void *) = (int (*)(void *, void *))(reverse ? reverse_cmp: base_compare);
+        set_comparator_function_pointer();
         /* Sort with the correct comparison routine and output the result */
-        my_qsort((void **)line_pointer, 0, lines_read - 1, compare,
-                    key, (const char *)keys, delimiter, argv);
+        my_qsort((void **)line_pointer, 0, lines_read - 1,key, (const char *)keys, delimiter, line_comparison_flag_pointer, line_comparison_flags_read);
         write_lines((const char**)line_pointer, lines_read);
         /* Cleanup not strictly necessary as our buffer is actually on the stack */
         char *p = *line_comparison_flag_pointer;
@@ -188,8 +173,8 @@ int main(int argc, char *argv[])
     return -1;
 }
 
-void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *),
-    unsigned int key, const char keys[], const char *delimiter, char **argv)
+void my_qsort(void *v[], int left, int right, unsigned int key, const char keys[], const char *delimiter,
+                char **line_of_comparison_flags, unsigned int line_of_comparison_flags_count)
 {
     if (left >= right) /* do nothing if array contains fewer than two elements */
     {
@@ -208,13 +193,25 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *),
             sort on the full line with the set options
          */
         if (key)
-        {
+        {            
+            int c;
+            unsigned int comparison_index;
             unsigned int keys_index = 0;
             while (keys[keys_index] != '\0')
             {
-
-            }
-            
+                while (c = *line_of_comparison_flags[0]++)
+                {
+                    set_comparison_flag(c);
+                }
+                set_comparator_function_pointer();
+                get_substring()
+                if ((*compare)(v[i], v[left]) < 0)
+                {
+                    swap(v, ++last, i);
+                }
+                ++keys_index;
+                ++line_of_comparison_flags;              
+            }            
         }
         else
         {
@@ -225,8 +222,8 @@ void my_qsort(void *v[], int left, int right, int (*compare)(void *, void *),
         }        
     }
     swap(v, left, last);
-    my_qsort(v, left, last -  1, compare, key, keys, delimiter, argv);
-    my_qsort(v, last + 1, right, compare, key, keys, delimiter, argv);
+    my_qsort(v, left, last -  1, key, keys, delimiter, line_of_comparison_flags, line_of_comparison_flags_count);
+    my_qsort(v, last + 1, right, key, keys, delimiter, line_of_comparison_flags, line_of_comparison_flags_count);
 }
 
 /* Which makes comparisons only on letters, numbers and blanks.
@@ -509,11 +506,11 @@ int process_arguments(char **argv, unsigned int argc, unsigned int keys[], char 
     int c;
     unsigned int number;
     unsigned int comparison_char_count = 0;
-    char comparison_flag[MAX_KEYS];
     char *p;
-
+    char comparison_flag[MAX_KEYS] = {};
+    *line_comparison_flags_read = 0;
     while(--argc > 0 && (*argv)[0] == '-')
-    {
+    {        
         while (c = *++argv[0]) /*   [] binds tighter than ++
                                     argv gives us the memory address of the first array (char string), [0] gives us the address of the first element of that
                                     ++ increment/walk along that array to get the address of that character / skipping the first character ('-')
@@ -552,15 +549,16 @@ int process_arguments(char **argv, unsigned int argc, unsigned int keys[], char 
         }
         if (comparison_char_count)
         {
-            if (comparison_char_count >= MAX_KEYS || (p = alloc(comparison_char_count)) == NULL) /* Request memory for our line of comparison flags */
+            if (comparison_char_count >= MAX_KEYS || (p = alloc(comparison_char_count + 1)) == NULL) /* Request memory for our line of comparison flags + '\0' */
             {
-                printf("Error: Out of memory, or comparison flag lines read in exeeded MAX_KEYS.\n");
+                printf("Error: Out of memory, or comparison flag lines read in exceeded MAX_KEYS.\n");
                 return 0;
             }
             strcpy(p, comparison_flag); /* Copy our read in line of comparison flags to the memory address within our memory buffer that p points to */
             line_comparison_flag_pointer[(*line_comparison_flags_read)++] = p; /* Add that pointer to our array of pointers */
+            reset_char_array(comparison_flag, comparison_char_count);
             comparison_char_count = 0; /* reset for the next line of comparison flags */
-        }
+        }        
         ++argv;
     }
     return 1;
@@ -605,6 +603,28 @@ void reset_comparison_flags(void)
     reverse = 0;
 }
 
+void set_comparator_function_pointer(void)
+{
+    /* Point to the correct comparison function */
+    if (directory)
+    {
+        base_compare = (int (*)(void *, void *))(directory_order_comp); /* only needs to work with -f (case insensitive flag) */
+    }
+    else
+    {
+        if (!numeric)
+        {
+            base_compare = (int (*)(void *, void *))(case_insensitive ? str_case_cmp: str_cmp);
+        }
+        else
+        {
+            base_compare = (int (*)(void *, void *))numcmp;
+        }
+    }
+    /* Do we need to reverse the comparison? */
+    compare = (int (*)(void *, void *))(reverse ? reverse_cmp: base_compare);
+}
+
 /* Set a comparison flag based on the input passed in
     Returns 1 if successfull, 0 if unsuccessful */
 unsigned int set_comparison_flag(int c)
@@ -646,6 +666,14 @@ char *alloc(int size)
         return alloc_pointer - size;
     }
     return NULL;
+}
+
+void reset_char_array(char array[], unsigned int number_of_elements)
+{
+	for (unsigned int i = 0; i < number_of_elements; ++i)
+    {
+        array[i] = 0;
+    }
 }
 
 /*  Validates a c-style string (first param) against the validation routine passed in as the second param.
