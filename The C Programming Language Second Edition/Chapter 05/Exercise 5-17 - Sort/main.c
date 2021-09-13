@@ -193,24 +193,44 @@ void my_qsort(void *v[], int left, int right, unsigned int key, const char keys[
             sort on the full line with the set options
          */
         if (key)
-        {            
+        {         
+            /* TODO: line of comparison flags to be reset before going to the start of the for loop 
+            also reset the comparison flags 
+            also reset substring1 and substring2
+            exit_loop = 0 not needed as it's already done at the top of the if (key) */   
             int c;
-            unsigned int comparison_index;
             unsigned int keys_index = 0;
-            while (keys[keys_index] != '\0')
+            unsigned int exit_loop = 0;
+            int comparison_result;
+            while (keys[keys_index] != '\0' && !exit_loop)
             {
                 while (c = *line_of_comparison_flags[0]++)
                 {
                     set_comparison_flag(c);
                 }
                 set_comparator_function_pointer();
-                get_substring()
-                if ((*compare)(v[i], v[left]) < 0)
+                char substring1[MAX_LINE_SIZE];
+                get_substring(v[i], delimiter, keys[keys_index] - 1, substring1);
+                char substring2[MAX_LINE_SIZE];
+                get_substring(v[left], delimiter, keys[keys_index] - 1, substring2);
+                comparison_result = (*compare)(substring1, substring2);
+                if (comparison_result < 0)
                 {
                     swap(v, ++last, i);
+                    keys_index = 0;
+                    exit_loop = 1;
                 }
-                ++keys_index;
-                ++line_of_comparison_flags;              
+                else if (comparison_result > 0)
+                {
+                    keys_index = 0;
+                    exit_loop = 1;
+                }
+                else
+                {
+                    exit_loop = 0;
+                    ++keys_index;
+                    ++line_of_comparison_flags; 
+                }                             
             }            
         }
         else
