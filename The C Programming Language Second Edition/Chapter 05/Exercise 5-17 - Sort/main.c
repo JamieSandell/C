@@ -195,7 +195,6 @@ void my_qsort(void *v[], int left, int right, unsigned int key, unsigned int con
                 else
                 {
                     ++keys_index;
-                    /*++line_of_comparison_flags;*/
                 }                             
             }            
         }
@@ -229,38 +228,8 @@ int directory_order_comp(char const *s1, char const *s2)
     -1 if the first non-matching character in s2 is lower than that of str2 */
 int numcmp(char *s1, char *s2)
 {
-    double d1;
-    double d2;
-    /* if (key)
-    {
-        unsigned int keys_index = 0;
-        unsigned int key_to_sort_on;
-        char *substring;
-        char s1_substring[MAX_LINE_SIZE];
-        unsigned int s1_substring_index = 0;
-        unsigned int s2_substring_index = 0;
-        char s2_substring[MAX_LINE_SIZE];
-        while (keys[keys_index] != '\0')
-        {
-            key_to_sort_on = keys[keys_index] - 1;
-            get_substring(s1, delimiter, key_to_sort_on, s1_substring);
-            get_substring(s2, delimiter, key_to_sort_on, s2_substring);
-            d1 = atof(s1_substring);
-            d2 = atof(s2_substring);
-            if (d1 < d2)
-            {
-                return -1;
-            }
-            else if(d1 > d2)
-            {
-                return 1;
-            }
-            ++keys_index;
-        }
-        return 0;
-    } */
-    d1 = atof(s1);
-    d2 = atof(s2);
+    double d1 = atof(s1);
+    double d2 = atof(s2);
 
     if (d1 == d2)
     {
@@ -303,39 +272,6 @@ int str_case_cmp(char const *s1, char const *s2)
     A '\0' in keys indicates the end of the array */
 int str_cmp(char const *s1, char const *s2 )
 {
-    /*
-    if (key)
-    {
-        unsigned int keys_index = 0;
-        unsigned int key_to_sort_on;
-        char *substring;
-        char s1_substring[MAX_LINE_SIZE];
-        unsigned int s1_substring_index = 0;
-        unsigned int s2_substring_index = 0;
-        char s2_substring[MAX_LINE_SIZE];
-        while (keys[keys_index] != '\0')
-        {
-            key_to_sort_on = keys[keys_index] - 1;
-            get_substring(s1, delimiter, key_to_sort_on, s1_substring);
-            get_substring(s2, delimiter, key_to_sort_on, s2_substring);
-            while (s1_substring[s1_substring_index] != '\0' && s2_substring[s2_substring_index] != '\0')
-            {
-                if (s1_substring[s1_substring_index] > s2_substring[s2_substring_index])
-                {
-                    return 1;
-                }
-                else if (s1_substring[s1_substring_index] < s2_substring[s2_substring_index])
-                {
-                    return -1;
-                }
-                ++s1_substring_index;
-                ++s2_substring_index;
-            }
-            ++keys_index;
-        }
-        return 0;
-    }
-    */
     while (*s1 != '\0' && *s2 != '\0')
     {
         if (*s1 > *s2)
