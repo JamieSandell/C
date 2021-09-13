@@ -18,12 +18,12 @@ Sandall,Trudi,1987
 Foster,Karl,1971
 
 Usage:
--t -k<n>ComparisonFlags
+-t -k<n><ComparisonFlags> (comparison flags and the key number can be in any order)
 e.g.
--t, -k3nr -k1
+-t, -k3nr -ka1
 
 says that the delimiter is a comma, that the fields (keys) to sort on is the 3rd field in numeric reverse order and the second field (key)
-to sort on is the 1st field (counting starts from 1) in the default (ASCII ascending)
+to sort on is the 1st field (counting starts from 1) in the ASCII ascending
 
 To achieve this, if at least one field has been specified to sort on, then we should just need to compare on the most important field.
 If the comparator returns 0, then no change is required based on sorting on that field (as in the values compared are equal), then we can move on
@@ -48,6 +48,7 @@ static int (*compare)(void *, void *);
 static char alloc_buffer[MAX_ALLOC_SIZE];
 static char* alloc_pointer = alloc_buffer;
 /* State */
+static int ascii;
 static int case_insensitive;
 static int directory;
 static int numeric;
@@ -61,24 +62,24 @@ static char **argument_vector;
 
 /* Compare and sort */
 void my_qsort(void *v[], int left, int right,
-    unsigned int key, const char keys[], const char *delimiter, char **line_of_comparison_flags, unsigned int line_of_comparison_flags_count);
-int directory_order_comp(const char *s1, const char *s2);
+    unsigned int key, unsigned int const *keys, char const *delimiter, char **line_of_comparison_flags, unsigned int line_of_comparison_flags_count);
+int directory_order_comp(char const *s1, char const *s2);
 int numcmp(char *s1, char *s2);
 int reverse_cmp(void *a, void *b);
-int str_case_cmp(const char *s1, const char *s2);
-int str_cmp(const char *s1, const char *s2);
+int str_case_cmp(char const *s1, char const *s2);
+int str_cmp(char const *s1, char const *s2);
 void swap(void *v[], int i, int j);
 /* Conversions */
-int partial_str_to_uint(const char *s, unsigned int *number);
-int str_to_float(const char *s, float *number);
+int partial_str_to_uint(char const *s, unsigned int *number);
+int str_to_float(char const *s, float *number);
 void str_to_lower(char *s);
-char *str_to_substrings(const char *s, const char *delimiter);
+char *str_to_substrings(char const *s, char const*delimiter);
 /* i/o */
 int get_line(char line[], int max_line_size);
-void get_substring(const char *s, const char *delimiter, unsigned int substring_index, char *substring);
+void get_substring(char const *s, char const *delimiter, unsigned int substring_index, char *substring);
 int process_arguments(char **argv, unsigned int argc, unsigned int keys[], char *line_comparison_flag_pointer[], unsigned int *line_comparison_flags_read);
 int read_lines(char *line_pointer[], int max_line_size);
-void write_lines(const char *line_pointer[], int number_of_lines);
+void write_lines(char const *line_pointer[], int number_of_lines);
 /* Logic */
 void reset_comparison_flags(void);
 void set_comparator_function_pointer(void);
@@ -87,10 +88,6 @@ unsigned int set_comparison_flag(int c);
 void afree(char *p);
 char *alloc(int size);
 void reset_char_array(char array[], unsigned int number_of_elements);
-/* Validation */
-int validate_input(const char *v[], int (*validation)(const char *), int number_of_lines);
-int validate_n(const char *s);
-int validate_d(const char *s);
 
 int main(int argc, char *argv[])
 {    
@@ -105,7 +102,6 @@ int main(int argc, char *argv[])
     char *line_pointer[MAX_LINES]; /* To store the pointers to our lines that will be in our memory buffer */
     char *line_comparison_flag_pointer[MAX_KEYS]; /* To store the pointers to our lines of comparison flags that will be in our memory buffer */
     int argc_initial_value = argc; /* cache a copy as we'll be changing argc and we will need the original value later on */
-    argument_vector = argv;
     int c;
     unsigned int number;
     unsigned int keys[MAX_KEYS] = {0};
@@ -119,52 +115,19 @@ int main(int argc, char *argv[])
     int lines_read = 0;
     if ((lines_read = read_lines(line_pointer, MAX_LINE_SIZE)) > 0)
     {
-        /* Validate the input */
-        /* TODO: Rewrite the validation so it works with argv/argument_vector */
-        int (*validation_pointer)(const char *) = NULL; /* Function pointer to a validation function */
-        for (int i = 0; arguments[i] != '\0'; ++i)
-        {
-            switch (arguments[i])
-            {
-                case 'k':
-                case 'r':
-                case 'f':
-                    validation_pointer = NULL;
-                    break;
-                case 'n':
-                    validation_pointer = validate_n;
-                    break;
-                case 'd':
-                    validation_pointer = validate_d;
-                    break;
-                default:
-                    /* TODO: fix this for 't' and a numeric character */
-                    printf("Warning: no validation case for argument %c\n", arguments[i]);
-                    break;
-            }
-            if (validation_pointer != NULL)
-            {
-                if (!(validate_input((const char**)line_pointer, validation_pointer, lines_read)))
-                {
-                    printf("The validation of input failed when compared with the argument flag %c\n", arguments[i]);
-                    return -1;
-                }
-            }
-        }
         set_comparator_function_pointer();
         /* Sort with the correct comparison routine and output the result */
-        my_qsort((void **)line_pointer, 0, lines_read - 1,key, (const char *)keys, delimiter, line_comparison_flag_pointer, line_comparison_flags_read);
-        write_lines((const char**)line_pointer, lines_read);
+        my_qsort((void **)line_pointer, 0, lines_read - 1, key, keys, delimiter, line_comparison_flag_pointer, line_comparison_flags_read);
+        write_lines((char const**)line_pointer, lines_read);
         /* Cleanup not strictly necessary as our buffer is actually on the stack */
-        char *p = *line_comparison_flag_pointer;
-        while (line_comparison_flags_read-- > 0)
-        {
-            afree(p++);
-        }
-        p = *line_pointer;
+        /* LIFO */
         while(lines_read-- > 0)
         {
-            afree(p++);
+            afree(*(line_pointer + lines_read));
+        }
+        while(line_comparison_flags_read-- > 0)
+        {
+            afree(*(line_comparison_flag_pointer + line_comparison_flags_read));
         }
         return 0;
     }
@@ -173,7 +136,7 @@ int main(int argc, char *argv[])
     return -1;
 }
 
-void my_qsort(void *v[], int left, int right, unsigned int key, const char keys[], const char *delimiter,
+void my_qsort(void *v[], int left, int right, unsigned int key, unsigned int const *keys, char const *delimiter,
                 char **line_of_comparison_flags, unsigned int line_of_comparison_flags_count)
 {
     if (left >= right) /* do nothing if array contains fewer than two elements */
@@ -181,6 +144,7 @@ void my_qsort(void *v[], int left, int right, unsigned int key, const char keys[
         return;
     }
 
+    char *original_line_of_comparison_flags = *line_of_comparison_flags;
     int i, last;    
     swap(v, left, (left + right) / 2);
     last = left;
@@ -193,43 +157,45 @@ void my_qsort(void *v[], int left, int right, unsigned int key, const char keys[
             sort on the full line with the set options
          */
         if (key)
-        {         
-            /* TODO: line of comparison flags to be reset before going to the start of the for loop 
-            also reset the comparison flags 
-            also reset substring1 and substring2
-            exit_loop = 0 not needed as it's already done at the top of the if (key) */   
+        {   
+            reset_comparison_flags();
             int c;
             unsigned int keys_index = 0;
             unsigned int exit_loop = 0;
             int comparison_result;
+            char substring1[MAX_LINE_SIZE];
+            char substring2[MAX_LINE_SIZE];
             while (keys[keys_index] != '\0' && !exit_loop)
             {
                 while (c = *line_of_comparison_flags[0]++)
                 {
                     set_comparison_flag(c);
                 }
-                set_comparator_function_pointer();
-                char substring1[MAX_LINE_SIZE];
-                get_substring(v[i], delimiter, keys[keys_index] - 1, substring1);
-                char substring2[MAX_LINE_SIZE];
+                set_comparator_function_pointer();                
+                get_substring(v[i], delimiter, keys[keys_index] - 1, substring1);                
                 get_substring(v[left], delimiter, keys[keys_index] - 1, substring2);
                 comparison_result = (*compare)(substring1, substring2);
                 if (comparison_result < 0)
                 {
                     swap(v, ++last, i);
                     keys_index = 0;
+                    *line_of_comparison_flags = original_line_of_comparison_flags;
+                    reset_char_array(substring1, sizeof(substring1));
+                    reset_char_array(substring2, sizeof(substring2));
                     exit_loop = 1;
                 }
                 else if (comparison_result > 0)
                 {
                     keys_index = 0;
+                    *line_of_comparison_flags = original_line_of_comparison_flags;
+                    reset_char_array(substring1, sizeof(substring1));
+                    reset_char_array(substring2, sizeof(substring2));
                     exit_loop = 1;
                 }
                 else
                 {
-                    exit_loop = 0;
                     ++keys_index;
-                    ++line_of_comparison_flags; 
+                    /*++line_of_comparison_flags;*/
                 }                             
             }            
         }
@@ -251,7 +217,7 @@ void my_qsort(void *v[], int left, int right, unsigned int key, const char keys[
     0 if strings are equal
     1 if s1 has a greater numerical value than s2
     -1 if s1 has a lesser numerical value than s2 */
-int directory_order_comp(const char *s1, const char *s2)
+int directory_order_comp(char const *s1, char const *s2)
 {
     return (case_insensitive ? str_case_cmp(s1, s2) : str_cmp(s1, s2));
 }
@@ -317,7 +283,7 @@ int reverse_cmp(void *a, void *b)
     0 if strings are equal
     1 if the first non-matching character in s1 has a greater ASCII value than that of s2
     -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2 */
-int str_case_cmp(const char *s1, const char *s2)
+int str_case_cmp(char const *s1, char const *s2)
 {
     char t1[MAX_LINE_SIZE];
     char t2[MAX_LINE_SIZE];
@@ -335,7 +301,7 @@ int str_case_cmp(const char *s1, const char *s2)
     -1 if the first non-matching character in s1 has a lesser ASCII value than that of s2
     If key is non-zero it will sort in order based on the keys passed in.
     A '\0' in keys indicates the end of the array */
-int str_cmp(const char *s1, const char *s2 )
+int str_cmp(char const *s1, char const *s2 )
 {
     /*
     if (key)
@@ -400,7 +366,7 @@ void swap(void *v[], int i, int j)
 /* Extracts the first continuous character (ASCII) data that is numerical and converts it to a positive integer
     e.g. -k12nr would result in 12 being extracted and stored in *number
     Returns 1 if a number was found, otherwise it returns 0 */
-int partial_str_to_uint(const char *s, unsigned int *number)
+int partial_str_to_uint(char const *s, unsigned int *number)
 {
     char temp[100] = {0};
     unsigned int i = 0;
@@ -429,7 +395,7 @@ int partial_str_to_uint(const char *s, unsigned int *number)
 /*  Tries to convert *s to a float and store it in *number
     Returns 0 if not a number
     Returns non-zero if success */
-int str_to_float(const char *s, float *number)
+int str_to_float(char const *s, float *number)
 {
     int sign;
     float power;
@@ -478,7 +444,7 @@ void str_to_lower(char *s)
 }
 
 /* Calls strtok with a copy of the passed in str */
-char *str_to_substrings(const char *s, const char *delimiter)
+char *str_to_substrings(char const *s, char const *delimiter)
 {
     static char buffer[MAX_LINE_SIZE * 2];
 
@@ -510,7 +476,7 @@ int get_line(char line[], int max_line_size)
     return char_count;
 }
 
-void get_substring(const char *s, const char *delimiter, unsigned int substring_index, char *substring)
+void get_substring(char const *s, char const *delimiter, unsigned int substring_index, char *substring)
 {
     strcpy(substring, str_to_substrings(s, delimiter));
     for (unsigned int i = 0; i < substring_index; ++i)
@@ -607,7 +573,7 @@ int read_lines(char *line_pointer[], int max_line_size)
     return number_of_lines_read;
 }
 
-void write_lines(const char *line_pointer[], int number_of_lines)
+void write_lines(char const *line_pointer[], int number_of_lines)
 {
     while(number_of_lines-- > 0)
     {
@@ -617,6 +583,7 @@ void write_lines(const char *line_pointer[], int number_of_lines)
 
 void reset_comparison_flags(void)
 {
+    ascii = 0;
     case_insensitive = 0;
     directory = 0;
     numeric = 0;
@@ -651,6 +618,9 @@ unsigned int set_comparison_flag(int c)
 {
     switch (c)
         {
+            case 'a':
+                ascii = 1;
+                return 1;
             case 'r':
                 reverse = 1;
                 return 1;
@@ -694,44 +664,4 @@ void reset_char_array(char array[], unsigned int number_of_elements)
     {
         array[i] = 0;
     }
-}
-
-/*  Validates a c-style string (first param) against the validation routine passed in as the second param.
-    Returns 0 if the validation failed.
-    Returns non-zero if the validation succeeded */
-int validate_input(const char *v[], int (*validation)(const char *), int number_of_lines)
-{
-    while(number_of_lines-- > 0)
-    {
-        if (!validation(*v++))
-        {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-/*  Returns 0 if not a valid number
-    Returns 1 if a valid number */
-int validate_n(const char *s)
-{
-    float number;
-    float *number_pointer = &number;
-    return str_to_float(s, number_pointer);
-}
-
-/* Which makes comparisons only on letters, numbers and blanks.
-    You must validate the input before calling.
-    Returns non-zero if the string contains only letters, numbers and blanks, 0 otherwise. */
-int validate_d(const char *s)
-{
-    while (*s != '\0')
-    {
-        if (!isspace(*s) && !isalnum(*s))
-        {
-            return 0;
-        }    
-        ++s;
-    }
-    return 1;
 }
