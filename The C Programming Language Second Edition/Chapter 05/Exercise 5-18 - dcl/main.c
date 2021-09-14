@@ -87,27 +87,27 @@ int dirdcl(void)
             printf("Error: missing )\n");
             return ERROR;
         }
-        else if (token_type == NAME) /* Variable name */
+    }
+    else if (token_type == NAME) /* Variable name */
+    {
+        strcpy(name, token);
+    }
+    else
+    {
+        printf("Error: expected name or (dcl)\n");
+        return ERROR;
+    }
+    while ((type = get_token()) == PARENS || type == BRACKETS)
+    {
+        if (type == PARENS)
         {
-            strcpy(name, token);
+            strcat(out, " function returning");
         }
         else
         {
-            printf("Error: expected name or (dcl)\n");
-            return ERROR;
-        }
-        while ((type = get_token()) == PARENS || type == BRACKETS)
-        {
-            if (type == PARENS)
-            {
-                strcat(out, " function returning");
-            }
-            else
-            {
-                strcat(out, " array");
-                strcat(out, token);
-                strcat(out, " of");
-            }
+            strcat(out, " array");
+            strcat(out, token);
+            strcat(out, " of");
         }
     }
     return SUCCESS;
