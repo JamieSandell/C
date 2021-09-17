@@ -6,13 +6,17 @@
 
 #define MAX_TOKEN 100
 
-enum {NAME, PARENS, BRACKETS, QUALIFIER};
+enum {NAME, PARENS, BRACKETS};
 enum {ERROR, SUCCESS};
 
 int dcl(void);
 int dirdcl(void);
 
+int is_qualifier(const char *s);
+int is_type(const char *s);
+
 int get_token(void);
+int get_params(void);
 void next_line(void);
 static int token_type; /* Type of the last token */
 static char token[MAX_TOKEN]; /* Last token string */
@@ -95,15 +99,20 @@ int dirdcl(void)
         printf("Error: expected name or (dcl)\n");
         return ERROR;
     }
-    while ((type = get_token()) == PARENS || type == BRACKETS || type == QUALIFIER)
+    while ((type = get_token()) == PARENS || type == BRACKETS || type == '(')
     {
         if (type == PARENS)
         {
             strcat(out, " function returning");
         }
-        else if (type == QUALIFIER)
+        else if (type == '(')
         {
-            
+            strcat(out, " function expecting");
+            if (get_params() == ERROR)
+            {
+                printf("Error when calling get_params.\n");
+                return ERROR;
+            }
         }
         else
         {
@@ -113,6 +122,38 @@ int dirdcl(void)
         }
     }
     return SUCCESS;
+}
+
+int is_qualifier(const char *s)
+{
+    static char qualifier_const[] = "const";
+    static char qualifier_volatile[] = "volatile";
+
+    /* If this list was to grow, better off using an array of pointers */
+    if ((strcmp(s, qualifier_const) == 0) || (strcmp(s, qualifier_volatile) == 0))
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+int is_type(const char *s)
+{
+    static char int_const[] = "int";
+    static char void_const[] = "void";
+    static char char_const[] = "char";
+
+    if ((strcmp(s, int_const) == 0) || (strcmp(s, void_const) == 0) || (strcmp(s, char_const) == 0))
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 /* Skips blanks and tabs, then finds the next token in the input;
@@ -137,7 +178,7 @@ int get_token(void)
         else
         {
             ungetch(c);
-            return token_type = QUALIFIER;
+            return token_type = '(';
         }
     }
     else if (c == '[')
@@ -163,6 +204,36 @@ int get_token(void)
     {
         return token_type = c;
     }
+}
+
+int get_params(void)
+{
+    char temp[MAX_TOKEN] = {0};
+
+    get_token();
+    while (token_type != ')')
+    {
+        if (is_type(token) || is_qualifier(token))
+        {
+            strcat(temp, " ");
+            strcat(temp, token);
+        }
+        if ((dcl() == ERROR))
+        {
+            return ERROR;
+        }
+        else if (token_type == NAME)
+        {
+            strcat(temp, " ");
+            strcat(temp, token);
+        }
+        else if (token_type == ',')
+        {
+            strcat(temp, ",");
+        }
+    }
+    strcat(out, temp);
+    return SUCCESS;
 }
 
 void next_line(void)
