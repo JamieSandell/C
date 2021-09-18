@@ -48,7 +48,8 @@ int main(int argc, char **argv)
         else
         {
             printf("%s: %s %s\n", name, out, data_type);
-        }        
+        }
+        name[0] = '\0'; /* Used for logic to see if name has already been set */       
     }
     return 0;
 }
@@ -90,7 +91,7 @@ int dirdcl(void)
             return ERROR;
         }
     }
-    else if (token_type == NAME) /* Variable name */
+    else if (token_type == NAME && name[0] == '\0') /* Variable name (and hasn't been set prior) */
     {
         strcpy(name, token);
     }
@@ -98,7 +99,7 @@ int dirdcl(void)
     {
         return token_type;
     }
-    else
+    else if (token_type != NAME)
     {
         printf("Error: expected name or (dcl)\n");
         return ERROR;
