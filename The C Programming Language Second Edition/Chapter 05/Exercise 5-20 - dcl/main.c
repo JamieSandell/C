@@ -94,6 +94,10 @@ int dirdcl(void)
     {
         strcpy(name, token);
     }
+    else if (token_type == ')')
+    {
+        return token_type;
+    }
     else
     {
         printf("Error: expected name or (dcl)\n");
@@ -213,23 +217,35 @@ int get_params(void)
     get_token();
     while (token_type != ')')
     {
-        if (is_type(token) || is_qualifier(token))
+        if (is_qualifier(token))
         {
             strcat(temp, " ");
             strcat(temp, token);
+            /* Now get the identifier name and the variable name*/
+            if ((dcl() == ERROR))
+            {
+                return ERROR;
+            }
+            strcat(temp, " ");
+            strcat(temp, name);
+            strcat(temp, " ");
+            strcat(temp, token);
         }
-        if ((dcl() == ERROR))
+        else if (is_type(token))
         {
-            return ERROR;
-        }
-        else if (token_type == NAME)
-        {
+            /* Now get the identifier name and the variable name*/
+            strcat(temp, " ");
+            strcat(temp, name);
             strcat(temp, " ");
             strcat(temp, token);
         }
         else if (token_type == ',')
         {
             strcat(temp, ",");
+        }
+        else if((dcl() == ERROR))
+        {
+            return ERROR;
         }
     }
     strcat(out, temp);
