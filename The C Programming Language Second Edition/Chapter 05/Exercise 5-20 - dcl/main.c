@@ -6,7 +6,7 @@
 
 #define MAX_TOKEN 100
 
-enum {NAME, PARENS, BRACKETS};
+enum {NAME, PARENS, BRACKETS, QUALIFIER, TYPE};
 enum {ERROR, SUCCESS};
 
 int dcl(void);
@@ -35,7 +35,8 @@ int main(int argc, char **argv)
     while (get_token() != EOF) /* 1st token on line */
     {
         strcpy(data_type, token); /* is the data type */
-        out[0] = '\0';
+        out[0] = '\0'; /* reset */
+        name[0] = '\0';
         if (dcl() == ERROR)
         {
             next_line();
@@ -48,8 +49,7 @@ int main(int argc, char **argv)
         else
         {
             printf("%s: %s %s\n", name, out, data_type);
-        }
-        name[0] = '\0'; /* Used for logic to see if name has already been set */       
+        }     
     }
     return 0;
 }
@@ -162,7 +162,8 @@ int is_type(const char *s)
 }
 
 /* Skips blanks and tabs, then finds the next token in the input;
-a "token" is a name, a pair of parentheses, a pair of brackets perhaps including a number, or any other single character.
+a "token" is a name, a pair of parentheses, a pair of brackets perhaps including a number, or any other single
+character.
 Returns the next token */
 int get_token(void)
 {
@@ -203,6 +204,14 @@ int get_token(void)
         }
         *p = '\0';
         ungetch(c);
+        if (is_qualifier(p))
+        {
+            return token_type = QUALIFIER;
+        }
+        else if (is_type(p))
+        {
+            return token_type = TYPE;
+        }
         return token_type = NAME;
     }
     else
