@@ -1,4 +1,7 @@
-/* Expand dcl to handle declarations with function argument types, qualifiers like const, and so on. */
+/* Expand dcl to handle declarations with function argument types, qualifiers like const, and so on.
+
+Tested with
+int x(const int y) */
 
 #include <ctype.h>
 #include <stdio.h>
@@ -34,9 +37,9 @@ int main(int argc, char **argv)
 {
     while (get_token() != EOF) /* 1st token on line */
     {
-        strcpy(data_type, token); /* is the data type */
         out[0] = '\0'; /* reset */
         name[0] = '\0';
+        strcpy(data_type, token); /* is the data type */        
         if (dcl() == ERROR)
         {
             next_line();
@@ -91,15 +94,15 @@ int dirdcl(void)
             return ERROR;
         }
     }
-    else if (token_type == NAME && name[0] == '\0') /* Variable name (and hasn't been set prior) */
+    else if (token_type == NAME && name[0] == '\0') /* Variable name that hasn't been set prior */
     {
         strcpy(name, token);
     }
-    else if (token_type == ')')
+    else if (token_type == ')' || token_type == QUALIFIER || token_type == TYPE)
     {
         return token_type;
     }
-    else if (token_type != NAME)
+    else if (token_type != NAME && token_type != QUALIFIER && token_type != TYPE)
     {
         printf("Error: expected name or (dcl)\n");
         return ERROR;
@@ -204,11 +207,11 @@ int get_token(void)
         }
         *p = '\0';
         ungetch(c);
-        if (is_qualifier(p))
+        if (name[0] != '\0' && is_qualifier(token)) /* name has not been set yet and it's a qualifier */
         {
             return token_type = QUALIFIER;
         }
-        else if (is_type(p))
+        else if (name[0] != '\0' && is_type(token))
         {
             return token_type = TYPE;
         }
@@ -224,40 +227,20 @@ int get_params(void)
 {
     char temp[MAX_TOKEN] = {0};
 
-    get_token();
     while (token_type != ')')
     {
-        if (is_qualifier(token))
-        {
-            strcat(temp, " ");
-            strcat(temp, token);
-            /* Now get the identifier name and the variable name*/
-            if ((dcl() == ERROR))
-            {
-                return ERROR;
-            }
-            strcat(temp, " ");
-            strcat(temp, name);
-            strcat(temp, " ");
-            strcat(temp, token);
-        }
-        else if (is_type(token))
-        {
-            /* Now get the identifier name and the variable name*/
-            strcat(temp, " ");
-            strcat(temp, name);
-            strcat(temp, " ");
-            strcat(temp, token);
-        }
-        else if (token_type == ',')
-        {
-            strcat(temp, ",");
-        }
-        else if((dcl() == ERROR))
+        if (dcl() == ERROR)
         {
             return ERROR;
         }
+        if (token_type == ',')
+        {
+            strcat(temp, ",");
+        }
+        strcat(temp, " ");
+        strcat(temp, token);
     }
+    strcat(temp, " returns");
     strcat(out, temp);
     return SUCCESS;
 }
