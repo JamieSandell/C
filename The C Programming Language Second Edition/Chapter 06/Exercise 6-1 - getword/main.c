@@ -1,4 +1,5 @@
-/* */
+/* Our version of getword does not properly handle underscores,
+string constants, comments or preprocessor control lines. Write a better version. */
 
 #include <ctype.h>
 #include <stdio.h>
@@ -104,12 +105,35 @@ int get_word(char *word, int limit)
     }
     for (; --limit > 0; w++)
     {
-        if (!isalnum(*w = getch()))
+        if (!isalnum(*w = getch()) || *w != '_') /* handle underscores */
         {
             ungetch(*w);
             break;
         }
+        /* Handle comments */
+        
     }
     *w = '\0';
     return word[0];
+}
+
+#define BUF_SIZE 100
+static char buf[BUF_SIZE]; /* Buffer for ungetch */
+static int bufp; /* Next free position in buf */
+
+int getch(void) /* Get a (possibly pushed back) character */
+{
+    return (bufp > 0) ? buf[--bufp] : getchar();
+}
+
+void ungetch(int c) /* Push character back on input */
+{
+    if (bufp >= BUF_SIZE)
+    {
+        printf("ungetch: too many characters\n");
+    }
+    else
+    {
+        buf[bufp++] = c;
+    }
 }
