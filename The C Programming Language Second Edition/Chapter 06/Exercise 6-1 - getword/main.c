@@ -86,11 +86,12 @@ int binsearch(char *word, struct key tab[], int n)
 /* get_word: get next word or character from input */
 int get_word(char *word, int limit)
 {
-    enum token { CODE, BEGIN_COMMENT, IN_COMMENT, END_COMMENT }
+    enum token { UNPROCESSED, CODE, BEGIN_COMMENT, IN_COMMENT, END_COMMENT };
 
     int c, getch(void);
     void ungetch(int);
     char *w = word;
+    enum token state = UNPROCESSED;
 
     while (isspace(c = getch()))
     {
@@ -106,13 +107,38 @@ int get_word(char *word, int limit)
         return c;
     }
     for (; --limit > 0; w++)
-    {
+    {        
+        /* Handle comments */
+        while (state != CODE)
+        {
+            switch (state)
+            {
+                case UNPROCESSED:
+                    if (*w == '/' && (*w = getch()) == '*')
+                    {
+                        state = IN_COMMENT;
+                    }
+                    break;
+                case IN_COMMENT:
+                    while (state == IN_COMMENT)
+                    {
+                        if (*w == '*' && (*w = getch()) == '\\')
+                        {
+                            state = UNPROCESSED;
+                        }
+                    }
+                    break;
+                default:
+                    printf("Error: unhandled case in get_word\n");
+                    break;
+            }
+        }
         if (!isalnum(*w = getch()) || *w != '_') /* handle underscores */
         {
             ungetch(*w);
             break;
         }
-        /* Handle comments */
+        
         
     }
     *w = '\0';
