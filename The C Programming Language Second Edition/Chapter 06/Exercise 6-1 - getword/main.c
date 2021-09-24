@@ -86,6 +86,8 @@ int binsearch(char *word, struct key tab[], int n)
 /* get_word: get next word or character from input */
 int get_word(char *word, int limit)
 {
+    enum token { CODE, BEGIN_COMMENT, IN_COMMENT, END_COMMENT }
+
     int c, getch(void);
     void ungetch(int);
     char *w = word;
