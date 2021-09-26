@@ -1,5 +1,10 @@
 /* Our version of getword does not properly handle underscores,
-string constants, comments or preprocessor control lines. Write a better version. */
+string constants, comments or preprocessor control lines. Write a better version.
+
+It's not crystal clear what is wanted in this exercise.
+I'm taking it to mean that a word should not be returned if it's within a string constant or a comment (single or multi-line)
+
+Otherwise if it's alphanumeric (within a preproccesor control line or not) or contains an underscore it should return that word. */
 
 #include <ctype.h>
 #include <stdio.h>
@@ -11,7 +16,7 @@ struct key
 {
     char *word;
     int count;
-} keytab[] = { /* Mustbe sorted in increasing order for the binary search */
+} keytab[] = { /* Must be sorted in increasing order for the binary search */
     "auto", 0,
     "break", 0,
     "case", 0,
@@ -19,13 +24,36 @@ struct key
     "const", 0,
     "continue", 0,
     "default", 0,
-    /* ... */
+    "do", 0,
+    "double", 0,
+    "else", 0,
+    "enum", 0,
+    "extern", 0,
+    "float", 0,
+    "for", 0,
+    "goto", 0,
+    "if", 0,
+    "int", 0,
+    "long", 0,
+    "register", 0,
+    "return", 0,
+    "short", 0,
+    "signed", 0,
+    "sizeof", 0,
+    "static", 0,
+    "struct", 0,
+    "switch", 0,
+    "typedef", 0,
+    "union", 0,
     "unsigned", 0,
     "void", 0,
     "volatile", 0,
     "while", 0,
 };
 #define NKEYS (sizeof keytab / sizeof keytab[0])
+
+enum token { UNPROCESSED, KEYWORD, COMMENT, STRING_CONSTANT };
+static enum token state = UNPROCESSED;
 
 int get_word(char *word, int limit);
 int binsearch(char *word, struct key *tab, int n);
@@ -86,70 +114,105 @@ int binsearch(char *word, struct key tab[], int n)
 /* get_word: get next word or character from input */
 int get_word(char *word, int limit)
 {
-    enum token { UNPROCESSED, CODE, BEGIN_COMMENT, IN_COMMENT, END_COMMENT };
-
-    int c, getch(void);
+    int c = 0;
+    int getch(void);
     void ungetch(int);
-    char *w = word;
-    enum token state = UNPROCESSED;
+    char *w = word;    
 
-    while (isspace(c = getch()))
+    if (state == UNPROCESSED)
     {
-        ;
-    }
-    if (c != EOF)
-    {
-        *w++ = c;
-    }
-    if (!isalpha(c))
-    {
-        *w = '\0';
-        return c;
-    }
-    for (; --limit > 0; w++)
-    {        
-        
-        if (!isalnum(*w = getch()) || *w != '_') /* handle underscores */
+        while (isspace(c = getch()))
         {
-            ungetch(*w);
-            break;
+            ;
         }
-        else /* potentially valid code word */
+        if (!isalpha(c) && c != '/' && c != '#' && c != '"')
         {
-            /* Handle comments */
-            while (state != CODE)
-            {
-                switch (state)
+            *w = '\0';
+            return c;
+        }
+    }
+    
+    while (state != KEYWORD && c != '\n' && c != EOF)
+    {
+        switch (state)
+        {
+            case UNPROCESSED:
+                switch (c)
                 {
-                    case UNPROCESSED:
-                        if (*w == '/')
+                    case '/':
+                        if ((c = getch()) == '*')
                         {
-                            if ((*w = getch()) == '*')
-                            {
-                                state = IN_COMMENT;
-                            }
-                            else
-                            {
-                                ungetch(*w);
-                            }                            
+                            state = COMMENT;
                         }
+                        else
+                        {
+                            ungetch(c);
+                        }   
                         break;
-                    case IN_COMMENT:
-                        while (state == IN_COMMENT)
-                        {
-                            if (*w == '*' && (*w = getch()) == '\\')
-                            {
-                                state = UNPROCESSED;
-                            }
-                        }
+                    case '"':
+                        state = STRING_CONSTANT;
                         break;
                     default:
-                        printf("Error: unhandled case in get_word\n");
-                        break;
+                        state = KEYWORD;
                 }
-            }
-        }        
+                break;
+            case COMMENT:
+                if ((c = getch()) == '*')
+                {
+                    if ((c = getch()) == '/') /* end of the comment */
+                    {
+                        c = getch();
+                        if (isalnum(c) || c == '_' || c == '#')
+                        {
+                            state = KEYWORD;
+                        }
+                        else
+                        {
+                            ungetch(c);
+                            state = UNPROCESSED;
+                        }
+                    }
+                    else
+                    {
+                        ungetch(c);
+                    }               
+                }
+                break;
+            case STRING_CONSTANT:
+                if ((c = getch()) == '"')
+                {
+                    if (isalnum(c) || c == '_' || c == '#')
+                    {
+                        state = KEYWORD;
+                    }
+                    else
+                    {
+                        ungetch(c);
+                        state = UNPROCESSED;
+                    }
+                }
+            default:
+                state = KEYWORD;
+                break;
+        }     
     }
+    
+    if (state == KEYWORD)
+    {
+        *w++ = c;
+        --limit;
+        for (; --limit > 0; w++)
+        {
+            *w = getch();
+            if (!isalnum(*w) && c != '_' && c != '#')
+            {
+                ungetch(*w);
+                break;
+            }   
+        }
+        state = UNPROCESSED;
+    }
+    
     *w = '\0';
     return word[0];
 }
