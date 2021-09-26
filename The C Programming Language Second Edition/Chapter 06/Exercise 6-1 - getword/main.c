@@ -119,7 +119,8 @@ int get_word(char *word, int limit)
     void ungetch(int);
     char *w = word;    
 
-    if (state == UNPROCESSED)
+    if (state == UNPROCESSED) /* if unprocessed ignore leading white space and return if it's not alpha and it isn't potentially the start of a comment,
+    string constant or preprocessor control */
     {
         while (isspace(c = getch()))
         {
@@ -132,7 +133,7 @@ int get_word(char *word, int limit)
         }
     }
     
-    while (state != KEYWORD && c != '\n' && c != EOF)
+    while (state != KEYWORD && c != '\n' && c != EOF) /* Process the line until we've determined we potentially have a keyword, we've not hit a newline or EOF */
     {
         switch (state)
         {
@@ -161,16 +162,7 @@ int get_word(char *word, int limit)
                 {
                     if ((c = getch()) == '/') /* end of the comment */
                     {
-                        c = getch();
-                        if (isalnum(c) || c == '_' || c == '#')
-                        {
-                            state = KEYWORD;
-                        }
-                        else
-                        {
-                            ungetch(c);
-                            state = UNPROCESSED;
-                        }
+                        state = UNPROCESSED;
                     }
                     else
                     {
@@ -181,16 +173,9 @@ int get_word(char *word, int limit)
             case STRING_CONSTANT:
                 if ((c = getch()) == '"')
                 {
-                    if (isalnum(c) || c == '_' || c == '#')
-                    {
-                        state = KEYWORD;
-                    }
-                    else
-                    {
-                        ungetch(c);
-                        state = UNPROCESSED;
-                    }
+                    state = UNPROCESSED;
                 }
+                break;
             default:
                 state = KEYWORD;
                 break;
@@ -204,13 +189,13 @@ int get_word(char *word, int limit)
         for (; --limit > 0; w++)
         {
             *w = getch();
-            if (!isalnum(*w) && c != '_' && c != '#')
+            if (!isalnum(*w) && *w != '_' && *w != '#')
             {
                 ungetch(*w);
                 break;
             }   
         }
-        state = UNPROCESSED;
+        state = UNPROCESSED; /* in case the function is called again we need to be in a fresh state */
     }
     
     *w = '\0';
