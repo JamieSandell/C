@@ -145,7 +145,7 @@ int get_word(char *word, int limit)
                         {
                             state = COMMENT;
                         }
-                        else
+                        else if (c != EOF)
                         {
                             ungetch(c);
                         }   
@@ -164,7 +164,7 @@ int get_word(char *word, int limit)
                     {
                         state = UNPROCESSED;
                     }
-                    else
+                    else if (c != EOF)
                     {
                         ungetch(c);
                     }               
@@ -194,12 +194,13 @@ int get_word(char *word, int limit)
                 ungetch(*w);
                 break;
             }   
-        }
+        }        
         state = UNPROCESSED; /* in case the function is called again we need to be in a fresh state */
+        *w = '\0';
+        return word[0];
     }
-    
     *w = '\0';
-    return word[0];
+    return c;
 }
 
 #define BUF_SIZE 100
