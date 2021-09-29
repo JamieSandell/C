@@ -1,7 +1,19 @@
 /* Write a program that reads a C program and prints in alphabetical
 order each group of variable names that are identical in the first 6
 characters, but different somewhere thereafter. Don't count words within
-strings and comments. Make 6 a parameter that can be set from the command line. */
+strings and comments. Make 6 a parameter that can be set from the command line. 
+
+For each word mark what state it was and the previous state
+a word can then be classed as a variable if the previous word was a data type
+and the current word is not:
+a data type
+inside a comment
+within a string constant
+
+or if a word has previously been added to the root group_node or below.
+
+TODO: get it working with enums
+*/
 
 #include <ctype.h>
 #include <stdio.h>
@@ -14,14 +26,7 @@ static unsigned int letters_to_match;
 
 enum token { UNPROCESSED, KEYWORD, COMMENT, STRING_CONSTANT, DATA_TYPE };
 static enum token state = UNPROCESSED;
-
-struct tnode /* the tree node: */
-{
-    char *word; /* points to the text */
-    int count; /* number of occurrences */
-    struct tnode *left; /* left child */
-    struct tnode *right; /*right child */
-};
+static enum token previous_state = UNPROCESSED;
 
 #define MAX_VARIABLES 100
 struct group_node /* the group node: */
@@ -38,7 +43,10 @@ void print_group(struct group_node *p);
 struct group_node *galloc(void);
 
 int get_word(char *word, int limit);
+int is_c_keyword(const char *s);
 int is_data_type(const char *s);
+int is_variable(const char *s, const struct group_node *p);
+int is_variable_in_group(const char *s, const struct group_node *p);
 char *my_strdup(char *s);
 
 int main(int argc, char *argv[])
@@ -58,16 +66,11 @@ int main(int argc, char *argv[])
 
     struct group_node *root = NULL;
     char word[MAX_WORD];
-    enum token previous_state = state;
     while (get_word(word, MAX_WORD) != EOF)
     {
-        if (isalpha(word[0]))
+        if (isalpha(word[0]) && is_variable(word, root))
         {
-            if (previous_state == DATA_TYPE && state == KEYWORD)
-            {
-                root = add_group(root, word);
-            }            
-            previous_state = state;
+            root = add_group(root, word);
         }
     }
     print_group(root);
@@ -151,9 +154,11 @@ char *my_strdup(char *s) /* make a duplicate of s */
     return p;
 }
 
-/* get_word: get next word or character from input */
+/* get_word: get next word or character from input if it's not a string constant and not a comment */
 int get_word(char *word, int limit)
 {
+    previous_state = state;
+    state = UNPROCESSED;
     int c = 0;
     int getch(void);
     void ungetch(int);
@@ -177,7 +182,6 @@ int get_word(char *word, int limit)
     {
         switch (state)
         {
-            case DATA_TYPE: /* fall through */
             case UNPROCESSED:
                 switch (c)
                 {
@@ -235,13 +239,11 @@ int get_word(char *word, int limit)
                 ungetch(*w);
                 break;
             }   
-        }    
-        state = UNPROCESSED; /* in case the function is called again we need to be in a fresh state */
+        }
         *w = '\0';
-        if (is_data_type(w))
+        if (is_data_type(word))
         {
             state = DATA_TYPE;
-            return c;
         }
         return word[0];
     }
@@ -249,6 +251,53 @@ int get_word(char *word, int limit)
     return c;
 }
 
+/* is_c_keyword: compares s against c keywords and returns 1 if true, 0 if false */
+int is_c_keyword(const char *s)
+{
+    if (is_data_type(s))
+    {
+        return 1;
+    }
+    static char *c_keywords[] = { /* left out data types as we've already checked for thos */
+        "auto",
+        "break",
+        "case",
+        "const",
+        "continue",
+        "default",
+        "do",
+        "else",
+        "enum",
+        "extern",
+        "for",
+        "goto",
+        "if",
+        "register",
+        "return",
+        "signed",
+        "sizeof",
+        "static",
+        "struct",
+        "switch",
+        "typedef",
+        "union",
+        "void",
+        "volatile",
+        "while"
+    };
+    static unsigned int c_keywords_count = sizeof(c_keywords) / sizeof(c_keywords[0]);
+
+    for (unsigned int c_keywords_index = 0; c_keywords_index < c_keywords_count; ++c_keywords_index)
+    {
+        if (strcmp(s, c_keywords[c_keywords_index]) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* is_data_type: compares s against c data types and returns 1 if true, 0 if false */
 int is_data_type(const char *s)
 {
     static char *data_types[] = {
@@ -256,7 +305,9 @@ int is_data_type(const char *s)
         "double",
         "float",
         "int",
-        "long"
+        "long",
+        "short",
+        "unsigned"
     };
     static unsigned int data_types_count = sizeof(data_types) / sizeof(data_types[0]);
 
@@ -266,6 +317,40 @@ int is_data_type(const char *s)
         {
             return 1;
         }
+    }
+    return 0;
+}
+
+/* is_variable: If s is not a c keyword and the previous_state was a data_type it returns 1
+If a variable matches variables in group_node p or below it returns 1
+Returns 1 if s is a variable, 0 if false */
+int is_variable(const char *s, const struct group_node *p)
+{
+    if (previous_state == DATA_TYPE && !is_c_keyword(s))
+    {
+        return 1;
+    }
+    else if (is_variable_in_group(s, p))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+/* is_variable_in_group: If s matches a variable in group_node p or below return 1, else return 0 */
+int is_variable_in_group(const char *s, const struct group_node *p)
+{
+    if (p != NULL)
+    {
+        is_variable_in_group(s, p->left);
+        for (unsigned int variable = 0; variable < p->count; ++variable)
+        {            
+            if (strcmp(s, p->variable_name_pointer[variable]))
+            {
+                return 1;
+            }
+        }
+        is_variable_in_group(s, p->right);
     }
     return 0;
 }
