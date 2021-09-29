@@ -12,7 +12,7 @@ strings and comments. Make 6 a parameter that can be set from the command line. 
 #define DEFAULT_LETTERS_TO_MATCH 6
 static unsigned int letters_to_match;
 
-enum token { UNPROCESSED, KEYWORD, COMMENT, STRING_CONSTANT };
+enum token { UNPROCESSED, KEYWORD, COMMENT, STRING_CONSTANT, DATA_TYPE };
 static enum token state = UNPROCESSED;
 
 struct tnode /* the tree node: */
@@ -22,10 +22,6 @@ struct tnode /* the tree node: */
     struct tnode *left; /* left child */
     struct tnode *right; /*right child */
 };
-struct tnode *add_tree(struct tnode *p, char *w);
-void free_tree(struct tnode *p);
-void print_tree(struct tnode *p);
-struct tnode *talloc(void);
 
 #define MAX_VARIABLES 100
 struct group_node /* the group node: */
@@ -37,86 +33,46 @@ struct group_node /* the group node: */
     struct group_node *right; /* right child */
 };
 struct group_node *add_group(struct group_node *p, char *w);
-void free_group(struct tnode *p);
-void print_group(struct tnode *p);
+void free_group(struct group_node *p);
+void print_group(struct group_node *p);
 struct group_node *galloc(void);
 
 int get_word(char *word, int limit);
+int is_data_type(const char *s);
 char *my_strdup(char *s);
 
 int main(int argc, char *argv[])
 {
-    struct tnode *root = NULL;
-    char word[MAX_WORD];
+    if (argc > 2)
+    {
+        printf("Error: too many arguments\n");
+        return -1;
+    }
+    int arg = atoi(*argv);
+    if (arg < 0)
+    {
+        printf("Error: argument must be a positive number\n");
+        return -1;
+    }
+    letters_to_match = (arg > 0) ? arg : DEFAULT_LETTERS_TO_MATCH;
 
+    struct group_node *root = NULL;
+    char word[MAX_WORD];
+    enum token previous_state = state;
     while (get_word(word, MAX_WORD) != EOF)
     {
         if (isalpha(word[0]))
         {
-            root = add_tree(root, word);
+            if (previous_state == DATA_TYPE && state == KEYWORD)
+            {
+                root = add_group(root, word);
+            }            
+            previous_state = state;
         }
     }
-    print_tree(root);
-    free_tree(root);
+    print_group(root);
+    free_group(root);
     return 0;
-}
-
-/* add_tree: add a node with w, at or below p */
-struct tnode *add_tree(struct tnode *p, char *w)
-{
-    int cond;
-
-    if (p == NULL) /* a new word has arrived */
-    {
-        p = talloc(); /* make a new node */
-        p->word = strdup(w);
-        p->count = 1;
-        p->left = p->right = NULL;
-    }
-    else if ((cond = strcmp(w, p->word)) == 0)
-    {
-        p->count++; /* repeated word */
-    }
-    else if (cond < 0) /* less than into left subtree */
-    {
-        p->left = add_tree(p->left, w);
-    }
-    else /* greater than into right subtree */
-    {
-        p->right = add_tree(p->right, w);
-    }
-
-    return p;
-}
-
-/* free_tree: frees the memory allocations of the tree */
-void free_tree(struct tnode *p)
-{
-    if (p == NULL)
-    {
-        return;
-    }
-    free_tree(p->left);
-    free_tree(p->right);
-    free(p->word);
-    free(p);
-}
-
-/* print_tree: in-order print of tree p */
-void print_tree(struct tnode *p)
-{
-    if (p != NULL)
-    {
-        print_tree(p->left);
-        printf("%4d %s\n", p->count, p->word);
-        print_tree(p->right);
-    }
-}
-
-/* talloc: make a tnode */
-struct tnode *talloc(void)
-{
-    return (struct tnode *) malloc(sizeof(struct tnode));
 }
 
 /* group_node: add a node with w, at or below p */
@@ -131,21 +87,50 @@ struct group_node *add_group(struct group_node *p, char *w)
         p->count = 1;
         p->left = p->right = NULL;
     }
-    else if((cond = strncmp(w, *(p->variable_name_pointer), letters_to_match)) == 0)
+    else if((cond = strncmp(w, *(p->variable_name_pointer), letters_to_match)) == 0) /* we have a match */
     {
-        p->variable_name_pointer /* TODO: add the variable to the existing collection */
-        p->count++; /* we have a match */
+        *(p->variable_name_pointer + p->count++) = my_strdup(w);
     }
     else if(cond < 0) /* less than into left subtree */
     {
-        p->left = add_group(p, w);
+        p->left = add_group(p->left, w);
     }
     else /* greater than into right subtree */
     {
-        p->right = add_group(p, w);
+        p->right = add_group(p->right, w);
     }
 
     return p;
+}
+
+void free_group(struct group_node *p)
+{
+    if (p == NULL)
+    {
+        return;
+    }
+    free_group(p->left);
+    free_group(p->right);
+    for (unsigned int variable = 0; variable < p->count; ++variable)
+    {
+        free(p->variable_name_pointer[variable]);
+    }
+    free(p);
+}
+
+void print_group(struct group_node *p)
+{
+    if (p != NULL)
+    {
+        print_group(p->left);
+        /*printf("%4d %s\n", p->count, p->word);*/
+        printf("%4d\n", p->count);
+        for (unsigned int variable = 0; variable < p->count; ++variable)
+        {
+            printf("%s\n", p->variable_name_pointer[variable]);
+        }
+        print_group(p->right);
+    }
 }
 
 /* galloc: make a group_node */
@@ -192,6 +177,7 @@ int get_word(char *word, int limit)
     {
         switch (state)
         {
+            case DATA_TYPE: /* fall through */
             case UNPROCESSED:
                 switch (c)
                 {
@@ -249,13 +235,39 @@ int get_word(char *word, int limit)
                 ungetch(*w);
                 break;
             }   
-        }        
+        }    
         state = UNPROCESSED; /* in case the function is called again we need to be in a fresh state */
         *w = '\0';
+        if (is_data_type(w))
+        {
+            state = DATA_TYPE;
+            return c;
+        }
         return word[0];
     }
     *w = '\0';
     return c;
+}
+
+int is_data_type(const char *s)
+{
+    static char *data_types[] = {
+        "char",
+        "double",
+        "float",
+        "int",
+        "long"
+    };
+    static unsigned int data_types_count = sizeof(data_types) / sizeof(data_types[0]);
+
+    for (unsigned int data_types_index = 0; data_types_index < data_types_count; ++data_types_index)
+    {
+        if (strcmp(s, data_types[data_types_index]) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 #define BUF_SIZE 100
