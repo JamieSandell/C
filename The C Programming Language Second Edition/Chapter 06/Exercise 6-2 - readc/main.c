@@ -4,13 +4,23 @@ characters, but different somewhere thereafter. Don't count words within
 strings and comments. Make 6 a parameter that can be set from the command line. 
 
 For each word mark what state it was and the previous state
-a word can then be classed as a variable if the previous word was a data type
+a word can then be classed as a (new) variable if the previous word was a data type
 and the current word is not:
 a data type
 inside a comment
 within a string constant
 
-or if a word has previously been added to the root group_node or below.
+then if a word is processed that is a KEYWORD and is not a C keyword (including data types)
+and it has previously been added to the root group_node or below then that is a match/existing variable and we increase the count for it.
+
+Tested with:
+int television = 1; 
+int bicycle = 1;
+int result = television + bicycle;
+printf("%s\n", result);
+int bicycles = 2;
+result += bicycles;
+printf("%s\n", result);
 
 TODO: get it working with enums
 */
@@ -200,6 +210,7 @@ int get_word(char *word, int limit)
                         break;
                     default:
                         state = KEYWORD;
+                        break;
                 }
                 break;
             case COMMENT:
@@ -219,6 +230,7 @@ int get_word(char *word, int limit)
                 if ((c = getch()) == '"')
                 {
                     state = UNPROCESSED;
+                    c = getch();
                 }
                 break;
             default:
@@ -258,7 +270,7 @@ int is_c_keyword(const char *s)
     {
         return 1;
     }
-    static char *c_keywords[] = { /* left out data types as we've already checked for thos */
+    static char *c_keywords[] = { /* left out data types as we've already checked for those */
         "auto",
         "break",
         "case",
@@ -340,17 +352,24 @@ int is_variable(const char *s, const struct group_node *p)
 /* is_variable_in_group: If s matches a variable in group_node p or below return 1, else return 0 */
 int is_variable_in_group(const char *s, const struct group_node *p)
 {
+    int result = 0;
     if (p != NULL)
     {
-        is_variable_in_group(s, p->left);
+        if (is_variable_in_group(s, p->left))
+        {
+            return 1;
+        }
         for (unsigned int variable = 0; variable < p->count; ++variable)
         {            
-            if (strcmp(s, p->variable_name_pointer[variable]))
+            if (strcmp(s, p->variable_name_pointer[variable]) == 0)
             {
                 return 1;
             }
         }
-        is_variable_in_group(s, p->right);
+        if (is_variable_in_group(s, p->right))
+        {
+            return 1;
+        }
     }
     return 0;
 }
