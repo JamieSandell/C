@@ -29,21 +29,26 @@ static int bufp; /* next free position in buf */
 int getch(void);
 void ungetch(int c);
 
-int get_word(char *word, int limit);
+int get_word(char *word, int limit, unsigned int *new_lines_after_word);
+int is_noise_word(const char *word);
 char *my_strdup(const char *w);
 
-static unsigned int line_number = 0; /* the current line number in the document/input */
+static unsigned int line_number = 1; /* the current line number in the document/input */
 
 int main()
 {
     struct word_node *root = NULL;
     char word[MAX_WORD];
-    while (get_word(word, MAX_WORD) != EOF)
+    unsigned int new_lines_after_word = 0;
+    unsigned int *p_new_lines_after_word = &new_lines_after_word;
+    while (get_word(word, MAX_WORD, p_new_lines_after_word) != EOF)
     {
-        if (isalpha(word[0]))
+        if (isalpha(word[0]) && !is_noise_word(word))
         {
-            root = add_word_node(root, word);
+            root = add_word_node(root, word);            
         }
+        line_number += new_lines_after_word;
+        new_lines_after_word = 0;
     }
     print_word_nodes(root);
     free_word_nodes(root);
@@ -102,7 +107,7 @@ void print_word_nodes(const struct word_node *p)
         for (unsigned int index = 0; index < p->count; ++index)
         {
             printf("%u", p->line_numbers[index]);
-            if (index < p->count)
+            if (index < p->count - 1)
             {
                 printf(",");
             }
@@ -121,6 +126,25 @@ struct word_node *walloc(void)
     return (struct word_node *) malloc(sizeof(struct word_node));
 }
 
+/* is_noise_word: returns 0 if not a noise word, non-zero if it is */
+int is_noise_word(const char *word)
+{
+    static const char *noise_words[] = {
+        "and",
+        "the"
+    };
+    static size_t noise_words_size = sizeof(noise_words) / sizeof(noise_words[0]);
+
+    for (size_t index = 0; index < noise_words_size; ++index)
+    {
+        if (strcmp(word, noise_words[index]) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /* my_strdup: create a duplicate of s */
 char *my_strdup(const char *s)
 {
@@ -136,7 +160,7 @@ char *my_strdup(const char *s)
 }
 
 /* get_word: get next word or character from input if it's not a string constant and not a comment */
-int get_word(char *word, int limit)
+int get_word(char *word, int limit, unsigned int *new_lines_after_word)
 {
     int c;
     char *w = word;
@@ -167,10 +191,13 @@ int get_word(char *word, int limit)
         {
             if (*w == '\n')
             {
-                ++line_number;
+                (*new_lines_after_word)++;
             }
-            ungetch(*w);
-            break;
+            else
+            {
+                ungetch(*w);                
+            }
+            break;          
         }
     }
     *w = '\0';
