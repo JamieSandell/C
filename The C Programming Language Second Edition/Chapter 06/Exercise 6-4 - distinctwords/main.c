@@ -40,7 +40,7 @@ void store(struct word_node *p, struct data_frequency count[], unsigned int *ind
 
 int main()
 {
-    struct word_node *root = NULL;
+    
     char word[MAX_WORD];
     char *words[MAX_WORDS];
     unsigned int word_count = 0;
@@ -53,19 +53,15 @@ int main()
             words[word_count++] = my_strdup(word);
         }
     }
-    /* sort the words */
+    /* sort the words and store them in our tree, print them and then free the memory */
     sort_by_frequency(words, word_count);
-    /* add the sorted words to our tree, print them and then free the memory */
+    struct word_node *root = NULL;
     for (unsigned int index = 0; index < word_count; ++index)
     {
         root = add_word_node(root, words[index]);
-    }    
+    }
     print_word_nodes(root);
     free_word_nodes(root);
-    for (unsigned int index = 0; index < word_count; ++index)
-    {
-        free(words[index]); /* TODO: pointers to the same words are duplicated, so can't free the same word more than once */
-    }
     return 0;
 }
 
@@ -148,10 +144,10 @@ char *my_strdup(const char *s)
     return p;
 }
 
-/* sort_by_frequency: sorts the input array according to frequency */
+/* sort_by_frequency: sorts the input array according to frequency (root should be NULL) */
 void sort_by_frequency(char *arr[], int n)
 {
-    /* Create an empty BST and insert all array items */
+    /* Create a BST and insert all array items */
     struct word_node *root = NULL;
     for (unsigned int index = 0; index < n; ++index)
     {
@@ -172,11 +168,10 @@ void sort_by_frequency(char *arr[], int n)
     {
         for (unsigned int frequency = count[i].frequency; frequency > 0; frequency--)
         {
-            arr[j++] = count[i].data;
+            strcpy(arr[j++], count[i].data);
         }
     }
-
-    /* free the memory */
+    /* cleanup memory */
     free_word_nodes(root);
 }
 
@@ -193,7 +188,7 @@ void store(struct word_node *p, struct data_frequency count[], unsigned int *ind
 
     /* store item from root and increment index */
     count[(*index)].frequency = p->count;
-    count[(*index)].data = my_strdup(p->word);
+    count[(*index)].data = p->word;
     (*index)++;
 
     /* right subtree */
