@@ -1,6 +1,8 @@
 /* Write a function undef that will remove a name and definition from the table maintained by lookup and install. */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct nlist /* table entry: */
 {
@@ -15,10 +17,13 @@ static struct nlist *hashtab[HASH_SIZE]; /* pointer table */
 unsigned hash(const char *s);
 struct nlist *install(const char *name, const char *defn);
 struct nlist *lookup(const char *s);
-char *strdup(char *s);
 
 int main()
 {
+    char *name = "Jamie";
+    char *surname = "Sandell";
+    install(name, "Trudi");
+    install(surname, "Russell");
     return 0;
 }
 
@@ -48,8 +53,8 @@ struct nlist *install(const char *name, const char *defn)
             return NULL;
         }
         hashval = hash(name);
-        np->next = hashtab[hashval];
-        hashtab[hashval] = np;
+        np->next = hashtab[hashval]; /* next points to whatever hashtab[hashval] is pointing to */
+        hashtab[hashval] = np; /* hashtab[hashval] now holds a pointer to the np we just installed */
     }
     else /* already there */
     {
@@ -65,5 +70,14 @@ struct nlist *install(const char *name, const char *defn)
 /* lookup: look for s in hashtab */
 struct nlist *lookup(const char *s)
 {
+    struct nlist *np;
 
+    for (np = hashtab[hash(s)]; np != NULL; np = np->next)
+    {
+        if (strcmp(s, np->name) == 0)
+        {
+            return np; /* found */
+        }
+    }
+    return NULL; /* not found */
 }
