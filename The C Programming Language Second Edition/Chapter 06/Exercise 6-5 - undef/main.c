@@ -17,6 +17,7 @@ static struct nlist *hashtab[HASH_SIZE]; /* pointer table */
 unsigned hash(const char *s);
 struct nlist *install(const char *name, const char *defn);
 struct nlist *lookup(const char *s);
+struct nlist *uninstall(char *name);
 
 int main()
 {
@@ -24,6 +25,18 @@ int main()
     char *surname = "1861";
     install(name, "1776");
     install(surname, "1861");
+    if (lookup(name))
+    {
+        printf("%s exists\n", name);
+    }
+    printf("removing %s\n", name);
+    if (uninstall(name))
+    {
+        if (!lookup(name))
+        {
+            printf("%s removed\n", name);
+        }
+    }
     return 0;
 }
 
@@ -84,6 +97,22 @@ struct nlist *install(const char *name, const char *defn)
     {
         return NULL;
     }
+    return np;
+}
+
+/* uninstall: remove (name, and it's defn) from hashtab */
+struct nlist *uninstall(char *name)
+{
+    struct nlist *np;
+    unsigned hashval;
+
+    if ((np = lookup(name)) == NULL) /* not found */
+    {
+        return NULL;
+    }
+    free(np->defn);
+    free(np->name);
+    free(np->next);
     return np;
 }
 
