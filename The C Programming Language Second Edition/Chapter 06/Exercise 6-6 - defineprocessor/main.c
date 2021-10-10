@@ -1,5 +1,10 @@
 /* Implement a simple version of the #define processor (i.e., no arguments) suitable for use with C programs,
-based on the routines of this section. You may also find getch and ungetch useful. */
+based on the routines of this section. You may also find getch and ungetch useful. 
+
+Reads the input, builds the tree as it goes and does the replacement for #defines as it goes.
+
+It does not take in to account comments
+*/
 
 #include <ctype.h>
 #include <stdio.h>
@@ -8,7 +13,6 @@ based on the routines of this section. You may also find getch and ungetch usefu
 
 #define BUF_SIZE 100
 #define HASH_SIZE 101
-#define MAX_WORD 100
 #define WORD_SIZE 100
 
 struct nlist /* table entry: */
@@ -23,7 +27,7 @@ static int bufp = 0; /* next free position in buf */
 static struct nlist *hashtab[HASH_SIZE]; /* pointer table */
 
 int getch(void);
-int get_number(void);
+int get_defn(char *word, int limit);
 int get_word(char *word, unsigned limit);
 unsigned hash(const char *s);
 struct nlist *install(const char *name, const char *defn);
@@ -32,24 +36,60 @@ void ungetch(int c);
 
 int main()
 {
-    enum state {unprocessed, define};
+    enum state {unprocessed, define, hash, potential_word};
     enum state state = unprocessed;
 
+    char name[WORD_SIZE];
+    char defn[WORD_SIZE];
     char word[WORD_SIZE];
+    struct nlist *result;
     int c;
-    while ((c = getch()) != '#' || c != EOF)
+
+    while ((c = getch()) != EOF)
     {
+        ungetch(c);
         switch (state)
         {
             case unprocessed:
-                c = get_word(word, MAX_WORD);
-                if (word == "define")
+                c = getch();
+                if (c == '#')
+                {
+                    state = hash;
+                }
+                else
+                {
+                    ungetch(c);
+                    state = potential_word;
+                }
+                break;
+            case define:
+                c = get_word(name, WORD_SIZE);
+                c = get_defn(defn, WORD_SIZE);
+                install(name, defn);
+                state = unprocessed;
+                break;
+            case hash:
+                c = get_word(name, WORD_SIZE);
+                if (strcmp(name, "define") == 0)
                 {
                     state = define;
                 }
                 break;
-            case define:
-
+            case potential_word:
+                c = get_word(word, WORD_SIZE);
+                if (c == '#')
+                {
+                    state = hash;
+                    break;
+                }
+                if (isalpha(word[0]))
+                {
+                    if ((result = lookup(word)))
+                    {
+                        printf("replacing %s with %s\n", word, result->defn);
+                    }
+                }
+                state = unprocessed;
                 break;
             default:
                 printf("Error: unhandled switch statement in main()\n");
@@ -65,10 +105,35 @@ int getch(void)
     return (bufp > 0) ? buf[--bufp] : getchar();
 }
 
-/* get_number: get net number from input */
-int get_number(void)
+/* get_defn: get next number from input */
+int get_defn(char *word, int limit)
 {
-    
+    int c;
+    char *w = word;
+
+    while (isspace(c = getch()))
+    {
+        ;
+    }
+    if (c != EOF)
+    {
+        *w++ = c;
+    }
+    if (!isalnum(c))
+    {
+        *w = '\0';
+        return c;
+    }
+    for (; --limit > 0; ++w)
+    {
+        if (!isalnum(*w = getch()))
+        {
+            ungetch(*w);
+            break;
+        }
+    }
+    *w = '\0';
+    return word[0];
 }
 
 /* get_word: get next word or character from input */
