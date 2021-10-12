@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
     while ((c = getchar()) != EOF)
     {
-        if (!iscntrl(c) && !isprint(c)) /* non-graphic character  */
+        if (!isprint(c)) /* non-graphic character  */
         {
             if ((column + 4) > COL_SIZE) /* keep within the column width set */
             {
@@ -79,7 +79,28 @@ int main(int argc, char *argv[])
         {
             switch (c)
             {
-
+                case '\n':
+                    printf("\n");
+                    column = 0;
+                    break;
+                case '\t':
+                    if ((column + TAB_SIZE) > COL_SIZE)
+                    {
+                        printf("\n");
+                        column = 0;
+                    }
+                    printf("\t");
+                    column += TAB_SIZE;
+                    break;
+                default:
+                    if ((column + 1) > COL_SIZE)
+                    {
+                        printf("\n");
+                        column = 0;
+                    }
+                    printf("%c", c);
+                    column += 1;
+                    break;
             }
         }
     }
