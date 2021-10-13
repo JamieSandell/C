@@ -17,6 +17,8 @@ void minprintf(char *fmt, ...)
     char cval;
     int ival;
     double dval;
+    int *nval;
+    void *pval;
     unsigned int uival;
 
     va_start(ap, fmt); /* make ap point to 1st unnamed arg */
@@ -38,8 +40,8 @@ void minprintf(char *fmt, ...)
                 printf("%A", dval);
                 break;
             case 'c':
-                cval = va_arg(ap, char);
-                printf("%c", cval);
+                ival = va_arg(ap, int); /* char is promoted to int warning, so use int here */
+                printf("%c", ival);
                 break;
             case 'd': /* fall through on purpose */
             case 'i':
@@ -70,12 +72,17 @@ void minprintf(char *fmt, ...)
                 dval = va_arg(ap, double);
                 printf("%G", dval);
                 break;
+            case 'n':
+                nval = va_arg(ap, int *);
+                break;
             case 'o':
                 uival = va_arg(ap, unsigned int);
                 printf("%o", uival);
                 break;
             case 'p':
-                
+                pval = va_arg(ap, void *);
+                printf("%p", pval);
+                break;
             case 's':
                 for (sval = va_arg(ap, char *); *sval; ++sval)
                 {
@@ -93,6 +100,9 @@ void minprintf(char *fmt, ...)
             case 'X':
                 uival = va_arg(ap, unsigned int);
                 printf("%X", uival);
+                break;
+            case '%':
+                putchar('%');
                 break;
             default:
                 putchar(*p);
