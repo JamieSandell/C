@@ -18,6 +18,7 @@ struct
 {
     unsigned int hex    : 1;
     unsigned int oct    : 1;
+    unsigned int text   : 1;
 } flags;
 
 static const char hex[] = "-hex";
@@ -25,29 +26,27 @@ static const char oct[] = "-oct";
 
 int main(int argc, char *argv[])
 {
-    int c;
-    unsigned column = 0;
     if (argc > 2)
     {
         printf("Error: too many flags provided. -hex or -oct\n");
         return -1;
     }
+    flags.hex = 0;
+    flags.oct = 0;
+    flags.text = 0;
     if (argc == 1)
     {
-        flags.oct = 0;
         flags.hex = 1;
     }
     else
     {
         if (strcmp(argv[1], hex) == 0)
         {
-            flags.oct = 0;
             flags.hex = 1;
         }
         else if (strcmp(argv[1], oct) == 0)
         {
             flags.oct = 1;
-            flags.hex = 1;
         }
         else
         {
@@ -56,10 +55,18 @@ int main(int argc, char *argv[])
         }
     }
 
+    int c;
+    unsigned column = 0;
     while ((c = getchar()) != EOF)
     {
         if (!isprint(c)) /* non-graphic character  */
         {
+            if (flags.text)
+            {
+                flags.text = 0;
+                printf("\nPrinting non-text\n");
+                column = 0;
+            }
             if ((column + 4) > COL_SIZE) /* keep within the column width set */
             {
                 printf("\n");
@@ -77,6 +84,12 @@ int main(int argc, char *argv[])
         }
         else
         {
+            if (!flags.text)
+            {
+                flags.text = 1;
+                printf("\nPrinting text\n");
+                column = 0;
+            }
             switch (c)
             {
                 case '\n':
