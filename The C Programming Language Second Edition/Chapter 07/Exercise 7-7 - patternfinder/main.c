@@ -27,8 +27,7 @@ struct input
     char file_path[MAX_FILE_PATH];
     FILE *fp;
     char *lineptr[MAX_LINES];  
-    unsigned int number_of_lines;
-      
+    unsigned int number_of_lines;      
 };
 
 struct my_file
@@ -60,10 +59,12 @@ int main(int argc, char *argv[])
         unsigned int line_size;
         char line[MAX_LINE_LENGTH];
         unsigned int line_count = 0;
-        inputs[input_count++] = create_input();
-        while((line_size = get_line(line, MAX_LINE_LENGTH, stdin)) > 0)
+        inputs[input_count] = create_input();
+        inputs[input_count]->file_path[0] = '\0';
+        inputs[input_count]->fp = stdin;
+        while((line_size = get_line(line, MAX_LINE_LENGTH, stdin)) > 0 && inputs[input_count]->number_of_lines < MAX_LINES)
         {
-            
+            inputs[input_count]->lineptr[inputs[input_count]->number_of_lines++] = strdup(line);
         }
     }
     else /* Process the cmd flags */
@@ -125,6 +126,28 @@ int main(int argc, char *argv[])
             printf("Finished searching file %s", files[i]->file_path);
         }
     }
+    for (unsigned int input = 0; input < input_count; ++input)
+    {
+        for (unsigned int line = 0; line < inputs[input]->number_of_lines; ++line)
+        {
+            if ((strstr(inputs[input]->lineptr[line], pattern) != NULL) != flags.exclusion)
+            {
+                if (flags.print_line_number)
+                {
+                    printf("Line number %u\n", line + 1);
+                }
+                if (inputs[input]->file_path)
+                {
+                    printf("Found '%s' in '%s'\n", pattern, inputs[input]->file_path);
+                }
+                else
+                {
+                    printf("Found %s\n");
+                }
+            }
+        }
+    }
+    /* TODO: free memory */
 
     return 0;
 }
