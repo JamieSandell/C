@@ -1,7 +1,9 @@
 /* Modify the pattern finding program of Chapter 5 to take its input from a set of named files or,
 if no files are named as arguments, from the standard input. Should the file name be printed when a matching line is found? 
 
-patternfinder [optional]-x [optional]-n [required]-ppattern [optional]file1.txt...[optional]fileN.txt */
+patternfinder [optional]-x [optional]-n [optional]-ppattern [optional]file1.txt...[optional]fileN.txt
+
+Note: If you specify a pattern you must also specify text files for input and vice versa. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +13,7 @@ patternfinder [optional]-x [optional]-n [required]-ppattern [optional]file1.txt.
 #define MAX_ARGS MAX_FILES + 3
 #define MAX_FILE_PATH 100
 #define MAX_LINE_LENGTH 100
+#define MAX_LINES 1000
 #define MAX_PATTERN 100
 
 struct flags
@@ -23,7 +26,9 @@ struct input
 {
     char file_path[MAX_FILE_PATH];
     FILE *fp;
-    char *lineptr[];
+    char *lineptr[MAX_LINES];  
+    unsigned int number_of_lines;
+      
 };
 
 struct my_file
@@ -45,6 +50,8 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    struct input *inputs[MAX_FILES];
+    unsigned int input_count = 0;
     char pattern[MAX_PATTERN];
     if (argc == 1) /* No cmd flags specified */
     {        
@@ -53,10 +60,10 @@ int main(int argc, char *argv[])
         unsigned int line_size;
         char line[MAX_LINE_LENGTH];
         unsigned int line_count = 0;
-        create_input();
+        inputs[input_count++] = create_input();
         while((line_size = get_line(line, MAX_LINE_LENGTH, stdin)) > 0)
         {
-            malloc(sizeof(line[0]) * strlen(line));
+            
         }
     }
     else /* Process the cmd flags */
