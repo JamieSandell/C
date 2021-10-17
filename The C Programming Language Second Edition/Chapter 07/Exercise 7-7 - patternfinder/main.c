@@ -10,6 +10,7 @@ patternfinder [optional]-x [optional]-n [required]-ppattern [optional]file1.txt.
 #define MAX_FILES 100
 #define MAX_ARGS MAX_FILES + 3
 #define MAX_FILE_PATH 100
+#define MAX_LINE_LENGTH 100
 #define MAX_PATTERN 100
 
 struct flags
@@ -18,12 +19,20 @@ struct flags
     unsigned int print_line_number  : 1;
 } flags;
 
+struct input
+{
+    char file_path[MAX_FILE_PATH];
+    FILE *fp;
+    char *lineptr[];
+};
+
 struct my_file
 {
     FILE *fp;
     char file_path[MAX_FILE_PATH];
 };
 
+struct input *create_input(void);
 struct my_file *create_my_file(FILE *fp, const char *file_path);
 int get_line(char *line, unsigned int max, FILE *fp);
 FILE *open_file(const char *file_path, const char *mode, const char *program_name);
@@ -38,9 +47,17 @@ int main(int argc, char *argv[])
 
     char pattern[MAX_PATTERN];
     if (argc == 1) /* No cmd flags specified */
-    {
-        printf("Please enter the pattern to find:\t");
+    {        
+        printf("Please enter the pattern to find:\t");        
         get_line(pattern, MAX_PATTERN, stdin);
+        unsigned int line_size;
+        char line[MAX_LINE_LENGTH];
+        unsigned int line_count = 0;
+        create_input();
+        while((line_size = get_line(line, MAX_LINE_LENGTH, stdin)) > 0)
+        {
+            malloc(sizeof(line[0]) * strlen(line));
+        }
     }
     else /* Process the cmd flags */
     {
@@ -79,21 +96,42 @@ int main(int argc, char *argv[])
                 files[files_index] = create_my_file(fp, c);
                 if (files[files_index] == NULL)
                 {
-                    fprintf(stderr, "failed to create my_file from file: %s\n", c);
+                    fprintf(stderr, "Error: %s failed to create my_file from file: %s\n", argv[0], c);
                 }
                 ++files_index;
             }       
         }
+        char line[MAX_LINE_LENGTH];
         for (unsigned int i = 0; i < files_index; ++i)
         {
-            if (!flags.exclusion)
+            printf("Searching file %s\n", files[0]->file_path);
+            while ((get_line(line, MAX_LINE_LENGTH, files[i]->fp)) > 0)
             {
-                if (strstr(files[i].))
+                if ((strstr(line, pattern) != NULL) != flags.exclusion)
+                {
+                    if (flags.print_line_number)
+                    {
+                        printf("line %u\n", i + 1);
+                    }
+                }
             }
+            printf("Finished searching file %s", files[i]->file_path);
         }
     }
 
     return 0;
+}
+
+struct input *create_input(void)
+{
+    struct input *input;
+
+    input = malloc(sizeof(*input));
+    if (input == NULL)
+    {
+        return NULL;
+    }
+    return input;
 }
 
 struct my_file *create_my_file(FILE *fp, const char *file_path)
