@@ -30,16 +30,8 @@ struct input
     unsigned int number_of_lines;      
 };
 
-struct my_file
-{
-    FILE *fp;
-    char file_path[MAX_FILE_PATH];
-};
-
 struct input *create_input(void);
-struct my_file *create_my_file(FILE *fp, const char *file_path);
 int get_line(char *line, unsigned int max, FILE *fp);
-FILE *open_file(const char *file_path, const char *mode, const char *program_name);
 
 int main(int argc, char *argv[])
 {
@@ -49,28 +41,35 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    flags.exclusion = 0;
+    flags.print_line_number = 0;
     struct input *inputs[MAX_FILES];
+    unsigned int input_index = 0;
     unsigned int input_count = 0;
+    char line[MAX_LINE_LENGTH];
+    unsigned int line_size;
     char pattern[MAX_PATTERN];
+    /* create our inputs */
     if (argc == 1) /* No cmd flags specified */
     {        
         printf("Please enter the pattern to find:\t");        
-        get_line(pattern, MAX_PATTERN, stdin);
-        unsigned int line_size;
-        char line[MAX_LINE_LENGTH];
+        line_size = get_line(pattern, MAX_PATTERN, stdin);
+        pattern[line_size - 1] = '\0'; /* delete the newline character */
+        line[MAX_LINE_LENGTH];
         unsigned int line_count = 0;
-        inputs[input_count] = create_input();
-        inputs[input_count]->file_path[0] = '\0';
-        inputs[input_count]->fp = stdin;
-        while((line_size = get_line(line, MAX_LINE_LENGTH, stdin)) > 0 && inputs[input_count]->number_of_lines < MAX_LINES)
+        inputs[input_index] = create_input();
+        ++input_count;
+        inputs[input_index]->file_path[0] = '\0';
+        inputs[input_index]->fp = stdin;
+        while((line_size = get_line(line, MAX_LINE_LENGTH, stdin)) > 0 && inputs[input_index]->number_of_lines < MAX_LINES)
         {
-            inputs[input_count]->lineptr[inputs[input_count]->number_of_lines++] = strdup(line);
+            line[line_size - 1] = '\0';
+            inputs[input_index]->lineptr[inputs[input_index]->number_of_lines++] = strdup(line);
         }
     }
     else /* Process the cmd flags */
     {
-        struct my_file *files[MAX_FILES];
-        unsigned int files_index = 0;
+        FILE *fp;
         char *c;
         while (--argc > 0)
         {
@@ -95,59 +94,61 @@ int main(int argc, char *argv[])
             }
             else /* file */
             {
-                FILE *fp = fopen(c, "r");
+                fp = fopen(c, "r");
                 if (fp == NULL)
                 {
                     fprintf(stderr, "Error: %s failed to open the file: %s\n", argv[0], c);
                     exit(-1);
                 }
-                files[files_index] = create_my_file(fp, c);
-                if (files[files_index] == NULL)
+                inputs[input_index] = create_input();            
+                if (inputs[input_index] == NULL)
                 {
-                    fprintf(stderr, "Error: %s failed to create my_file from file: %s\n", argv[0], c);
+                    fprintf(stderr, "Error: %s failed to create inputs[%u] from file: %s\n", argv[0], input_index, c);
+                    exit(-1);
                 }
-                ++files_index;
+                strcpy(inputs[input_index]->file_path, c);
+                while((line_size = get_line(line, MAX_LINE_LENGTH, fp)) > 0 && inputs[input_index]->number_of_lines < MAX_LINES)
+                {
+                    line[line_size - 1] = '\0';
+                    inputs[input_index]->lineptr[inputs[input_index]->number_of_lines++] = strdup(line);
+                }         
+                fclose(fp);
+                ++input_index;
+                ++input_count;
             }       
         }
-        char line[MAX_LINE_LENGTH];
-        for (unsigned int i = 0; i < files_index; ++i)
-        {
-            printf("Searching file %s\n", files[0]->file_path);
-            while ((get_line(line, MAX_LINE_LENGTH, files[i]->fp)) > 0)
-            {
-                if ((strstr(line, pattern) != NULL) != flags.exclusion)
-                {
-                    if (flags.print_line_number)
-                    {
-                        printf("line %u\n", i + 1);
-                    }
-                }
-            }
-            printf("Finished searching file %s", files[i]->file_path);
-        }
     }
-    for (unsigned int input = 0; input < input_count; ++input)
+    /* search for the pattern */
+    for (input_index = 0; input_index < input_count; ++input_index)
     {
-        for (unsigned int line = 0; line < inputs[input]->number_of_lines; ++line)
+        for (unsigned int line = 0; line < inputs[input_index]->number_of_lines; ++line)
         {
-            if ((strstr(inputs[input]->lineptr[line], pattern) != NULL) != flags.exclusion)
-            {
-                if (flags.print_line_number)
+            if ((strstr(inputs[input_index]->lineptr[line], pattern) != NULL) != flags.exclusion)
+            {                
+                if (inputs[input_index]->file_path[0])
                 {
-                    printf("Line number %u\n", line + 1);
-                }
-                if (inputs[input]->file_path)
-                {
-                    printf("Found '%s' in '%s'\n", pattern, inputs[input]->file_path);
-                }
+                    printf("Found '%s' in '%s'\n", pattern, inputs[input_index]->file_path);
+                }                
                 else
                 {
-                    printf("Found %s\n");
+                    printf("Found %s\n", pattern);
+                }
+                if (flags.print_line_number)
+                {
+                    printf(" on line number %u\n", line + 1);
                 }
             }
         }
     }
-    /* TODO: free memory */
+    /* free memory */
+    for (input_index = 0; input_index < input_count; ++input_index)
+    {
+        for (unsigned int line = 0; line < inputs[input_index]->number_of_lines; ++line)
+        {
+            free(inputs[input_index]->lineptr[line]);
+        }
+        free(inputs[input_index]);
+    }
 
     return 0;
 }
@@ -164,20 +165,6 @@ struct input *create_input(void)
     return input;
 }
 
-struct my_file *create_my_file(FILE *fp, const char *file_path)
-{
-    struct my_file *file;
-
-    file = malloc(sizeof(*file));
-    if (file == NULL)
-    {
-        return NULL;
-    }
-    strcpy(file->file_path, file_path);
-    file->fp = fp;
-    return file;
-}
-
 int get_line(char *line, unsigned int max, FILE *fp)
 {
     unsigned int count = 0;
@@ -187,18 +174,4 @@ int get_line(char *line, unsigned int max, FILE *fp)
         return 0;
     }
     return strlen(line);
-}
-
-/* open_file: Attempts to open the file with desired access mode. Returns a pointer to the file if successful.
-Returns NULL if unsuccessful.
-program_name is the name of the program attempting to open the file, i.e. argv */
-FILE *open_file(const char *file_path, const char *mode, const char *program_name)
-{
-    FILE *fp;
-    if ((fp = fopen(file_path, mode)) == NULL)
-    {
-        fprintf(stderr, "%s failed to open %s\n", program_name, file_path);
-        return NULL;
-    }
-    return fp;
 }
