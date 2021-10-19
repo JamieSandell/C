@@ -17,6 +17,7 @@ struct file
 };
 
 size_t get_line(char *line, unsigned int max_line_length, FILE *stream);
+void init_file_pointer(struct file file[], const char *line, unsigned int *file_count, const char *program_name);
 void print_file(struct file *file, FILE *stream);
 
 int main(int argc, char *argv[])
@@ -29,39 +30,26 @@ int main(int argc, char *argv[])
     }
     unsigned int file_count = 0;
     size_t line_size;
-    char line[MAX_LINE_LENGTH]; 
-    if (argc == 1) /* no arguments passed in */
+    char line[MAX_LINE_LENGTH];
+    if (argc > MAX_FILES + 1) /* +1 for the first argument being the program name */
+    {
+        fprintf(stderr, "Error: %s was passed too many file names, max supported is %i files\n", argv[0], MAX_FILES);
+        exit(-1);
+    }
+    else if (argc == 1) /* no arguments passed in */
     {           
         printf("Enter the file names including the file path, seperate each one by pressing enter\n");
         while ((line_size = (get_line(line, MAX_LINE_LENGTH, stdin))) > 0)
         {
             line[line_size - 1] = '\0'; /* remove the newline character */
-            if (file_count == MAX_FILES)
-            {
-                fprintf(stderr, "Error: %s exceed file count. Max files : %u\n", argv[0], MAX_FILES);
-                break;
-            }
-            files[file_count].fp = fopen(line, "r");
-            if (files[file_count].fp == NULL)
-            {
-                fprintf(stderr, "Error: %s failed to open %s\n", argv[0], line);
-                exit(-1);
-            }
-            fclose(files[file_count].fp);
-            files[file_count].file_path = strdup(line);
-            if (files[file_count].file_path == NULL)
-            {
-                fprintf(stderr, "Error: %s failed to allocate memory for file->file_path\n", argv[0]);
-                exit(-1);
-            }
-            files[file_count].page_count = 0;
-            files[file_count].title = strdup(line);
-            if (files[file_count].title == NULL)
-            {
-                fprintf(stderr, "Error: %s failed to allocate memory for file->title\n", argv[0]);
-                exit(-1);
-            }
-            ++file_count;
+            init_file_pointer(files, line, &file_count, argv[0]);
+        }
+    }
+    else /* args passed in */
+    {
+        while (--argc > 0)
+        {
+            init_file_pointer(files, *++argv, &file_count, argv[0]);
         }
     }
     /* print files */
@@ -93,6 +81,36 @@ size_t get_line(char *line, unsigned int max_line_length, FILE *stream)
         return 0;
     }
     return strlen(line);
+}
+
+void init_file_pointer(struct file files[], const char *line, unsigned int *file_count, const char *program_name)
+{
+    if (*file_count == MAX_FILES)
+    {
+        fprintf(stderr, "Error: %s exceed file count. Max files : %u\n", program_name, MAX_FILES);
+        exit(-1);
+    }
+    files[*file_count].fp = fopen(line, "r");
+    if (files[*file_count].fp == NULL)
+    {
+        fprintf(stderr, "Error: %s failed to open %s\n", program_name, line);
+        exit(-1);
+    }
+    fclose(files[*file_count].fp);
+    files[*file_count].file_path = strdup(line);
+    if (files[*file_count].file_path == NULL)
+    {
+        fprintf(stderr, "Error: %s failed to allocate memory for file->file_path\n", program_name);
+        exit(-1);
+    }
+    files[*file_count].page_count = 0;
+    files[*file_count].title = strdup(line);
+    if (files[*file_count].title == NULL)
+    {
+        fprintf(stderr, "Error: %s failed to allocate memory for file->title\n", program_name);
+        exit(-1);
+    }
+    (*file_count)++;
 }
 
 void print_file(struct file *file, FILE *stream)
