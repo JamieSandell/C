@@ -21,7 +21,19 @@ FILE _iob[OPEN_MAX] = { { 0, (char *)0, (char *)0, 1, 0, 0, 0, 0, 0 },
 int main(int argc, char *argv[])
 {
     /* TODO: error checking */
-    
+    FILE *fp;
+    if ((fp = my_fopen(argv[1], "r")) == NULL)
+    {
+        return 1;
+    }
+    else
+    {
+        int c;
+        while ((c = getc(fp)) != EOF)
+        {
+            write(1, &c, 1);
+        }
+    }
     return 0;
 }
 
