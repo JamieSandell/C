@@ -6,16 +6,18 @@ typedef struct _iofbuf {
     int cnt; /* character left */
     char* ptr; /* next character position */
     char* base; /* location of buffer */
-    struct {
-        unsigned int _READ :1;
-        unsigned int _WRITE :1;
-        unsigned int _UNBUF :1;
-        unsigned int _EOF :1;
-        unsigned int _ERR :1;
-    } flag; /* mode of file access */
     int fd; /* file descriptor */
+    int flag; /* mode of file access */
 } FILE;
 extern FILE _iob[OPEN_MAX];
+
+enum _flags {
+	_READ    = 01,                     /* file open for reading */
+	_WRITE   = 02,                     /* file open for writing */
+	_UNBUF   = 04,                     /* file is unbuffered */
+	_EOF     = 010,                    /* EOF has occurred on this file */
+	_ERR     = 020,                    /* error occurred on this file */
+};
 
 #define stdin (&_iob[0])
 #define stdout (&_iob[1])
