@@ -14,7 +14,7 @@ int fflush(FILE *fp);
 FILE *my_fopen(const char *name, const char *mode);
 
 /* stdin, stdout stderr
-character left, next character position, location of buffer, read, write, unbuffered, eof, error, file descriptor */
+character left, next character position, location of buffer, (read, write, unbuffered, eof, error), file descriptor */
 FILE _iob[OPEN_MAX] = {
 	{ 0, (char *) 0, (char *) 0, _READ, 0 },
 	{ 0, (char *) 0, (char *) 0, _WRITE, 1 },
@@ -24,20 +24,26 @@ FILE _iob[OPEN_MAX] = {
 
 int main(int argc, char *argv[])
 {
-    /* TODO: error checking */
-    FILE *fp;
-    if ((fp = my_fopen(argv[1], "r")) == NULL)
+    FILE *fp_read;
+    if ((fp_read = my_fopen(argv[1], "r")) == NULL)
+    {
+        return 1;
+    }
+    FILE *fp_write;
+    if ((fp_write = my_fopen("./test.txt", "w")) == NULL)
     {
         return 1;
     }
     else
     {
         int c;
-        while ((c = getc(fp)) != EOF)
+        while ((c = getc(fp_read)) != EOF)
         {
-            write(1, &c, 1);
+            putc(c, fp_write);
         }
     }
+    fclose(fp_read);
+    fclose(fp_write);
     return 0;
 }
 
