@@ -31,7 +31,7 @@ FILE _iob[OPEN_MAX] = {
 int main(int argc, char *argv[])
 {
     FILE *fp_write;
-    if ((fp_write = my_fopen(argv[1], "w")) == NULL)
+    if ((fp_write = my_fopen("./test.txt", "w")) == NULL)
     {
         return 1;
     }
@@ -39,14 +39,21 @@ int main(int argc, char *argv[])
     {
         char name[] = "Jamie";
         char *cp = name;
+        while (*cp != '\0')
+        {
+            putc(*cp++, fp_write);
+        }
+        char insert_text[] = "My name is ";
+        cp = insert_text;        
         if (fseek(fp_write, 0, SEEK_SET) != 0)
         {
+            fclose(fp_write);
             return -1;
         }
         while (*cp != '\0')
         {
             putc(*cp++, fp_write);
-        }
+        }        
     }
     fclose(fp_write);
     return 0;
@@ -90,45 +97,61 @@ int _fillbuf(FILE *fp)
 /* _flushbuf: flush the contents of the buffer to the file */
 int _flushbuf(int x, FILE *fp)
 {
-    /* Determine whether the file is writable
-    When the buffer has been allocated, the contents of the buffer are written into the file through the system call write
-    When the buffer has not been allocated it is allocated
-    When judging that the written character is EOF, it means that the purpose of calling this function is to forcibly refresh the buffer
-        without writing characters. Assign cnt to BUFSIZE and ptr to the first address of the buffer base
-    When the written character is not EOF, the buffer is full and the buffer needs to be flushed to the file.
-        cnt is BUFSIZE - 1, put the written character x in the first grid of the buffer, and then move ptr back one char unit.
-    When the calling the write function, the number of bytes written cannot be written to 1 or BUFSIZE
-     */
     if (fp->flag & (_WRITE | _EOF | _ERR) != _WRITE)
     {
         return EOF;
     }
-    ssize_t number_of_bytes_written;
-    if (fp->base != NULL)
+    if (fp->base == NULL && ((fp->flag & _UNBUF) == 0)) /* buffered flag is set, but no buffer yet */
     {
-        number_of_bytes_written = write(fp->fd, fp->base, fp->ptr - fp->base);
-        if (number_of_bytes_written != fp->ptr - fp->base)
+        if ((fp->base = malloc(BUFSIZ)) == NULL)
         {
-            fp->flag |= _ERR;
-            return EOF;
+            /* failed to allocate a buffer, so use unbuffered */
+            fp->flag |= _UNBUF;
+        }
+        else
+        {
+            fp->ptr = fp->base;
+            fp->cnt = BUFSIZ - 1;
         }
     }
-    else if ((fp->base = malloc((sizeof(char)) * BUFSIZ)) == NULL)
+
+
+    ssize_t number_of_bytes_written;
+    int bufsize;
+    unsigned char ux = x;
+    if (fp->flag & _UNBUF == 0) /* buffered write */
+    {
+        if (x != EOF)
+        {
+            *fp->ptr++ = ux;
+        }
+        bufsize = (int)(fp->ptr - fp->base);
+        number_of_bytes_written = write(fp->fd, fp->base, bufsize);
+        fp->ptr = fp->base;
+        fp->cnt = BUFSIZ - 1;
+    }
+    else if (fp->flag & _UNBUF) /* unbuffered write */
+    {
+        fp->ptr = fp->base = NULL;
+        fp->cnt = 0;
+        if (x == EOF)
+        {
+            return EOF;
+        }
+        number_of_bytes_written = write(fp->fd, &ux, 1);
+        bufsize = 1;
+    }
+
+    if (number_of_bytes_written == bufsize)
+    {
+        return x;
+    }
+    else
     {
         fp->flag |= _ERR;
         return EOF;
     }
-    if (x == EOF)
-    {
-        fp->cnt = BUFSIZ;
-        fp->ptr = fp->base;
-    }
-    else
-    {
-        fp->cnt = BUFSIZ - 1;
-        fp->ptr = fp->base;
-        *fp->ptr++ = x;
-    }
+
     return x;
 }
 
@@ -161,7 +184,7 @@ int fflush(FILE *fp)
     {
         for (unsigned int index = 0; index < OPEN_MAX; ++index)
         {
-            if (fp->flag & _WRITE)
+            if (_iob[index].flag & _WRITE)
             {
                 if (fflush(&(_iob[index])) == -1)
                 {
@@ -198,7 +221,7 @@ origin - This is the position from where offset is added. It is specified by one
 This function returns zero if successful, or else it returns a non-zero value. */
 int fseek(FILE *fp, long offset, int origin)
 {
-    if (origin != SEEK_CUR || origin != SEEK_END || origin != SEEK_SET)
+    if (origin != SEEK_CUR && origin != SEEK_END && origin != SEEK_SET)
     {
         return -1;
     }
@@ -207,30 +230,41 @@ int fseek(FILE *fp, long offset, int origin)
         return -1;
     }
 
-    /* When the file is readable, due to the existence of the buffer, our intuitive file pointer position is different from the real file pointer position,
-    which is cnt unit length difference. So when we set the offset length,
-    the real file pointer needs to move offset-cnt unit length (offset is a positive or negative number).
-    After that, we need to set cnt to 0 so that the data in the buffer can be updated next time it is read.
-    When origin is SEEK_SET or SEEK_END, lseek can be directly transferred. */
-    if (fp->flag & _READ)
+    if ((!(fp->flag & _UNBUF)) && fp->base != NULL) /* unbuffered input */
     {
-        if (origin == SEEK_CUR)
+        if (fp->flag & _WRITE) /* writeable */
         {
-            offset -= fp->cnt; /* modify the offset by the number of unused characters remaining in the buffer */
+            if (fflush(fp) != 0)
+            {
+                return EOF;
+            }            
         }
-        fp->cnt = 0; /* Clear the remaining characters in the buffer */
-        return lseek(fp->fd, offset, origin);
+        else if (fp->flag & _READ) /* readable */
+        {
+            if (origin == SEEK_CUR)
+            {
+                if (offset >= 0 && offset <= fp->cnt)
+                {
+                    fp->cnt -= offset; /* sets the offset to be from the last character the user read, not the actual last character read */
+                    fp->ptr += offset;
+                    fp->flag &= ~_EOF;
+                    return 0;
+                }
+                else
+                {
+                    offset -= fp->cnt;
+                }
+            }
+            fp->cnt = 0;
+            fp->ptr = fp->base;
+        }
     }
-    else if (fp->flag & _WRITE)
+    int result = (lseek(fp->fd, offset, origin) < 0);
+    if (result == 0)
     {
-        /* When writable the file pointer position is different from the intuitive file pointer position by ptr-base length,
-        which is just the length of the buffer, so flush it */
-        if (fflush(fp) == EOF)
-        {
-            return EOF;
-        }
-        return lseek(fp->fd, offset, origin);
+        fp->flag &= ~_EOF; /* successful, so clear the EOF flag */
     }
+    return result;
 }
 
 /* my_fopen: open file, return file pointer */
