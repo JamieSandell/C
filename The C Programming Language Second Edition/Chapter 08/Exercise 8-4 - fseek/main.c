@@ -37,15 +37,15 @@ int main(int argc, char *argv[])
     }
     else
     {
-        char name[] = "Jamie";
+        char name[] = "My name is ";
         char *cp = name;
         while (*cp != '\0')
         {
             putc(*cp++, fp_write);
         }
-        char insert_text[] = "My name is ";
+        char insert_text[] = "Jamie";
         cp = insert_text;        
-        if (fseek(fp_write, 0, SEEK_SET) != 0)
+        if (fseek(fp_write, 0, SEEK_END) != 0)
         {
             fclose(fp_write);
             return -1;
@@ -115,22 +115,10 @@ int _flushbuf(int x, FILE *fp)
         }
     }
 
-
     ssize_t number_of_bytes_written;
     int bufsize;
-    unsigned char ux = x;
-    if (fp->flag & _UNBUF == 0) /* buffered write */
-    {
-        if (x != EOF)
-        {
-            *fp->ptr++ = ux;
-        }
-        bufsize = (int)(fp->ptr - fp->base);
-        number_of_bytes_written = write(fp->fd, fp->base, bufsize);
-        fp->ptr = fp->base;
-        fp->cnt = BUFSIZ - 1;
-    }
-    else if (fp->flag & _UNBUF) /* unbuffered write */
+    unsigned char ux = x;    
+    if (fp->flag & _UNBUF) /* unbuffered write */
     {
         fp->ptr = fp->base = NULL;
         fp->cnt = 0;
@@ -140,6 +128,17 @@ int _flushbuf(int x, FILE *fp)
         }
         number_of_bytes_written = write(fp->fd, &ux, 1);
         bufsize = 1;
+    }
+    else /* buffered write */
+    {
+        if (x != EOF)
+        {
+            *fp->ptr++ = ux;
+        }
+        bufsize = (int)(fp->ptr - fp->base);
+        number_of_bytes_written = write(fp->fd, fp->base, bufsize);
+        fp->ptr = fp->base;
+        fp->cnt = BUFSIZ - 1;
     }
 
     if (number_of_bytes_written == bufsize)
@@ -159,21 +158,22 @@ int _flushbuf(int x, FILE *fp)
 This method returns zero if the stream is successfully closed. On failure, EOF is returned. */
 int fclose(FILE *fp)
 {
-    free(fp->base);
-    if ((fp->flag & (_WRITE | _ERR | _EOF)) == _WRITE) /* Writable? */
+    if (fp == NULL)
     {
-        if (fflush(fp) == EOF)
-        {
-            fp->flag |= _EOF;
-            return EOF;
-        }
+        return -1;
     }
-    if (close(fp->fd) == -1)
+    fflush(fp);
+    fp->cnt = 0;
+    fp->ptr = NULL;
+    if (fp->base != NULL)
     {
-        fp->flag |= _ERR;
-        return EOF;
+        free(fp->base);
     }
-    return 0;
+    fp->base = NULL;
+    fp->flag = 0;
+    int result = close(fp->fd);
+    fp->fd = -1;
+    return result;
 }
 
 /* fflush: Flushes the output buffer of a stream.*/
@@ -230,7 +230,7 @@ int fseek(FILE *fp, long offset, int origin)
         return -1;
     }
 
-    if ((!(fp->flag & _UNBUF)) && fp->base != NULL) /* unbuffered input */
+    if ((!(fp->flag & _UNBUF)) && fp->base != NULL) /* buffered */
     {
         if (fp->flag & _WRITE) /* writeable */
         {
